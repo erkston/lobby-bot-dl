@@ -35,7 +35,7 @@ Servers = config['Servers']
 NudgeMessages = config['NudgeMessages']
 
 # declaring other stuff
-version = "v0.0.0"
+version = "v0.0.1"
 ReactionIntervalsSeconds = []
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 serverinfo = []
