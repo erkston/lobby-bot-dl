@@ -3,6 +3,7 @@ import asyncio
 import datetime
 from datetime import timezone
 import distutils
+from distutils import util
 import random
 from zoneinfo import ZoneInfo
 import discord
