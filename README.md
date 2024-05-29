@@ -49,4 +49,4 @@ Depending on the current state of the lobby and which setting you are changing i
 /lbreset will reset the lobby completely and remove all existing members.
 
 ## Docker Images
-See Dockerhub
+See [Dockerhub](https://hub.docker.com/r/erkston/lobby-bot-dl)
