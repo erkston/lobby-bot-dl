@@ -61,7 +61,10 @@ class Bot(discord.Bot):
             if not await is_message_deleted(lobby_channel, Lobbies[1].message_id):
                 lobby_message = await lobby_channel.fetch_message(Lobbies[1].message_id)
                 await lobby_message.delete()
-                Lobbies.pop(1)
+            if not await is_message_deleted(Lobbies[1].host.dm_channel, Lobbies[1].admin_msg_id):
+                admin_message = await Lobbies[1].host.dm_channel.fetch_message(Lobbies[1].admin_msg_id)
+                await admin_message.delete()
+            Lobbies.pop(1)
         async for message in lobby_channel.history(limit=50):
             if message.author == bot.user:
                 print(f'Found old message from {bot.user}, deleting it')
@@ -80,9 +83,11 @@ bot = Bot(intents=intents)
 
 
 class Lobby:
-    def __init__(self, lobby_number, message_id, server, password, sapp_players, ambr_players, fill_players, active):
+    def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, sapp_players, ambr_players, fill_players, active):
         self.number = lobby_number
         self.message_id = message_id
+        self.host = host
+        self.admin_msg_id = admin_msg_id
         self.server = server
         self.password = password
         self.sapp_players = sapp_players
@@ -100,7 +105,7 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
         if setting.casefold() == "botgame":
             global BotGame
             BotGame = value
-            await ctx.respond(f'BotGame has been set to "{BotGame}"')
+            await ctx.respond(f'BotGame has been set to "{BotGame}"', ephemeral=True)
             print(f'BotGame changed to {BotGame} by {ctx.author.display_name}')
             await bot.change_presence(status=discord.Status.idle, activity=discord.Game(f"{BotGame}"))
             print(f'Updated discord presence to playing {BotGame}')
@@ -108,47 +113,47 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
         elif setting.casefold() == "lobbyroleping":
             global LobbyRolePing
             LobbyRolePing = value
-            await ctx.respond(f'LobbyRolePing has been set to "{LobbyRolePing}"')
+            await ctx.respond(f'LobbyRolePing has been set to "{LobbyRolePing}"', ephemeral=True)
             print(f'LobbyRolePing changed to {LobbyRolePing} by {ctx.author.display_name}')
 
         elif setting.casefold() == "lobbyautoreset":
             global LobbyAutoReset
             LobbyAutoReset = value
-            await ctx.respond(f'LobbyAutoReset has been set to "{LobbyAutoReset}"')
+            await ctx.respond(f'LobbyAutoReset has been set to "{LobbyAutoReset}"', ephemeral=True)
             print(f'LobbyAutoReset changed to {LobbyAutoReset} by {ctx.author.display_name}')
 
         elif setting.casefold() == "lobbymessagetitle":
             global LobbyMessageTitle
             LobbyMessageTitle = value
-            await ctx.respond(f'LobbyMessageTitle has been set to "{LobbyMessageTitle}"')
+            await ctx.respond(f'LobbyMessageTitle has been set to "{LobbyMessageTitle}"', ephemeral=True)
             print(f'LobbyMessageTitle changed to {LobbyMessageTitle} by {ctx.author.display_name}')
             await update_all_lobby_messages()
 
         elif setting.casefold() == "lobbymessagecolor":
             global LobbyMessageColor
             LobbyMessageColor = value
-            await ctx.respond(f'LobbyMessageColor has been set to "{LobbyMessageColor}"')
+            await ctx.respond(f'LobbyMessageColor has been set to "{LobbyMessageColor}"', ephemeral=True)
             print(f'LobbyMessageColor changed to {LobbyMessageColor} by {ctx.author.display_name}')
             await update_all_lobby_messages()
 
         elif setting.casefold() == "activemessagecolor":
             global ActiveMessageColor
             ActiveMessageColor = value
-            await ctx.respond(f'ActiveMessageColor has been set to "{ActiveMessageColor}"')
+            await ctx.respond(f'ActiveMessageColor has been set to "{ActiveMessageColor}"', ephemeral=True)
             print(f'ActiveMessageColor changed to {ActiveMessageColor} by {ctx.author.display_name}')
             await update_all_lobby_messages()
 
         elif setting.casefold() == "lobbythreshold":
             global LobbyThreshold
             LobbyThreshold = value
-            await ctx.respond(f'LobbyThreshold has been set to {LobbyThreshold}')
+            await ctx.respond(f'LobbyThreshold has been set to {LobbyThreshold}', ephemeral=True)
             print(f'LobbyThreshold changed to {LobbyThreshold} by {ctx.author.display_name}')
             await update_all_lobby_messages()
 
         elif setting.casefold() == "lobbycooldown":
             LobbyCooldown = value
             LobbyCooldownSeconds = convert_to_seconds(LobbyCooldown)
-            await ctx.respond(f'LobbyCooldown has been set to {LobbyCooldown}')
+            await ctx.respond(f'LobbyCooldown has been set to {LobbyCooldown}', ephemeral=True)
             print(f'LobbyCooldown changed to {LobbyCooldown} ({LobbyCooldownSeconds}s) by {ctx.author.display_name}')
 
         elif setting.casefold() == "getcfg":
@@ -168,25 +173,15 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
                                   f'LobbyCooldown: {LobbyCooldown}\n'
                                   f'TeamNames: {TeamNames}\n'
                                   f'Some settings hidden, please edit config file')
-            await ctx.respond('Check your DMs')
+            await ctx.respond('Check your DMs', ephemeral=True)
             print(f'Sent config readout to {ctx.author.display_name}')
 
         else:
-            await ctx.respond("I don't have that setting, please try again")
+            await ctx.respond("I don't have that setting, please try again", ephemeral=True)
             print(f'Received command from {ctx.author.display_name} but I did not understand it :(')
     else:
         await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
         print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
-
-
-@bot.command(name="lbreset", description="Kick all existing members and reset lobby")
-async def lbreset(ctx):
-    if bot_admin_role in ctx.author.roles:
-        print(f'Received reset request from {ctx.author.display_name}, resetting...')
-
-    else:
-        await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
-        print(f'Received reset request from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
 
 
 @bot.command(name="startlobby", description="Start a lobby")
@@ -199,7 +194,9 @@ async def startlobby(ctx, server, password):
         print(f'lobby{lobby_number}: Received lobby request from {ctx.author.display_name}, starting Lobby #{lobby_number}')
         lobby_message = await initialize_lobby(lobby_number)
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
-        Lobbies.append(Lobby(lobby_number, lobby_message.id, server, password, [], [], [], 0))
+        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel")
+        admin_panel_msg = await ctx.author.send(embed=embed, view=AdminButtons(timeout=None))
+        Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [], [], [], 0))
         await update_message(lobby_number)
 
     else:
@@ -258,7 +255,7 @@ async def on_ready():
             print(f'Found old message from {bot.user}, deleting it')
             await message.delete()
     print('------------------------------------------------------')
-    Lobbies.append(Lobby(0, 0, "0.0.0.0", "pass", [], [], [], 0))
+    Lobbies.append(Lobby(0, 0, "host", 0, "0.0.0.0", "pass", [], [], [], 0))
     print('Startup complete, awaiting command')
 
 
@@ -309,9 +306,9 @@ async def update_message(lobby_number):
         embed.add_field(name='\u200b', value='\u200b', inline=False)
         embed.add_field(name='EITHER', value=fill_players_string, inline=False)
         embed.timestamp = datetime.datetime.now()
-        embed.set_footer(text='Last updated')
+        embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
-        await lobby_message.edit(embed=embed, view=LobbyButtons())
+        await lobby_message.edit(embed=embed, view=LobbyButtons(timeout=None))
     elif current_lobby_size >= int(LobbyThreshold) and Lobbies[lobby_number].active:
         print(f'lobby{lobby_number}: Lobby activated, displaying final player list')
         embed = discord.Embed(title=f'Lobby is starting!',
@@ -321,7 +318,7 @@ async def update_message(lobby_number):
         embed.add_field(name=TeamNames[1], value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
         embed.timestamp = datetime.datetime.now()
-        embed.set_footer(text='Last updated')
+        embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
         await lobby_message.edit(embed=embed, view=None)
 
@@ -362,7 +359,13 @@ async def get_lobby_number(interaction):
     while i < len(Lobbies):
         if interaction.message.id == Lobbies[i].message_id:
             lobby_number = Lobbies[i].number
-            print(f'lobby{lobby_number}: Received button press from {interaction.user.display_name}')
+            print(f'lobby{lobby_number}: Received lobby button press from {interaction.user.display_name}')
+        i += 1
+    i = 0
+    while i < len(Lobbies):
+        if interaction.message.id == Lobbies[i].admin_msg_id:
+            lobby_number = Lobbies[i].number
+            print(f'lobby{lobby_number}: Received admin button press from {interaction.user.display_name}')
         i += 1
     return lobby_number
 
@@ -401,12 +404,17 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].active = 0
     Lobbies[lobby_number].sapp_players.clear()
     Lobbies[lobby_number].ambr_players.clear()
+    Lobbies[lobby_number].fill_players.clear()
     await update_message(lobby_number)
 
 
 async def close_lobby(lobby_number):
-    lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
-    await lobby_message.delete()
+    if not await is_message_deleted(lobby_channel, Lobbies[lobby_number].message_id):
+        lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
+        await lobby_message.delete()
+    if not await is_message_deleted(Lobbies[1].host.dm_channel, Lobbies[lobby_number].admin_msg_id):
+        admin_message = await Lobbies[1].host.dm_channel.fetch_message(Lobbies[lobby_number].admin_msg_id)
+        await admin_message.delete()
 
 
 async def is_message_deleted(channel, message_id):
@@ -415,6 +423,23 @@ async def is_message_deleted(channel, message_id):
         return False
     except discord.errors.NotFound:
         return True
+
+
+class DMmodal(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_item(discord.ui.InputText(label="Text", style=discord.InputTextStyle.long))
+
+    async def callback(self, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        text = self.children[0].value
+        for player in Lobbies[lobby_number].sapp_players:
+            await player.send(f"{text}")
+        for player in Lobbies[lobby_number].ambr_players:
+            await player.send(f"{text}")
+        for player in Lobbies[lobby_number].fill_players:
+            await player.send(f"{text}")
+        await interaction.response.send_message(f"Sent DM to Lobby {lobby_number} players: \n {text}", ephemeral=True)
 
 
 class LobbyButtons(discord.ui.View):
@@ -486,6 +511,38 @@ class LobbyButtons(discord.ui.View):
                 i += 1
             await interaction.response.send_message(f"Removed from fill", ephemeral=True)
             await update_message(lobby_number)
+
+
+class AdminButtons(discord.ui.View):
+    @discord.ui.button(label="Reset Lobby", style=discord.ButtonStyle.blurple)
+    async def reset_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received lobby reset command from {interaction.user.display_name}')
+        await reset_lobby(lobby_number)
+        await interaction.response.send_message(f"Lobby {lobby_number} reset", ephemeral=True)
+
+    @discord.ui.button(label="Close Lobby", style=discord.ButtonStyle.red)
+    async def close_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received lobby close command from {interaction.user.display_name}')
+        await close_lobby(lobby_number)
+        await interaction.response.send_message(f"Lobby {lobby_number} closed", ephemeral=True)
+
+    @discord.ui.button(label="Resend connect info", style=discord.ButtonStyle.green)
+    async def resend_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received resend info command from {interaction.user.display_name}')
+        if Lobbies[lobby_number].active:
+            await send_lobby_info(lobby_number)
+            await interaction.response.send_message(f"Connect info resent", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"Lobby is not active yet, sent nothing", ephemeral=True)
+
+    @discord.ui.button(label="DM Players", style=discord.ButtonStyle.secondary)
+    async def dm_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received player dm command from {interaction.user.display_name}')
+        await interaction.response.send_modal(DMmodal(title=f"DM Lobby {lobby_number} Players"))
 
 
 bot.run(DiscordBotToken)
