@@ -26,6 +26,7 @@ The bot requires the following permissions: Send Messages, Manage Messages, Embe
 The server should have a dedicated channel and role as well (see config below)
 
 ### Configuration
+Copy config/config_example.json to config/config.json and edit accordingly.
 - DiscordBotToken - Your bots token from the Discord Developer Portal
 - BotTimezone - Timezone used for timestamps in console output. Will use this timezone instead of system time
 - BotGame* - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
