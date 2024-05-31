@@ -4,30 +4,16 @@
     "BotGame": "a fun game :)",
     "BotAdminRole": "Lobby Bot Admin",
     "LobbyChannelName": "lobby-bot",
-    "LobbyRole": "Server Lobby",
+    "LobbyRole": "PUG",
+    "LobbyRolePing": "True",
+    "LobbyAutoReset": "True",
     "LobbyMessageTitle": "My Lobby!",
     "LobbyMessageColor": "388727",
-    "NappingMessageColor": "715814",
-    "NudgeMessageEnable": "False",
-    "NudgeCooldown": "30m"
-    "NudgeThreshold": "4",
-    "NudgeChannelName": "general",
+    "ActiveMessageColor": "715814",
     "LobbyThreshold": "12",
     "LobbyCooldown": "1h",
-    "PingRemovalTimer": "5m",
     "TeamNames":[
       "The Satire Name",
       "The Anchor Sand"
-    ],
-    "Servers":[
-      ["SERVER.IP", SERVERPORT]
-    ],
-    "NudgeMessages": [
-      "Pssst, come join us",
-      "Only a few more people needed!",
-      "Any gamers in chat?",
-      "Hop on",
-      "join up idiot",
-      "I am going to beat you up if you don't click this"
     ]
 }
