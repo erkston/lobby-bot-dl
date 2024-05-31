@@ -36,7 +36,7 @@ The server should have a dedicated channel and role as well (see config below)
 - LobbyAutoReset* - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely.
 - LobbyMessageTitle* - Title of the discord message showing the lobby information
 - LobbyMessageColor* and ActiveMessageColor* - Hex values used for the discord embed messages
-- LobbyThreshold* - The number of players required to launch the lobby. Total number of players (two teams and "either")
+- LobbyThreshold* - The number of players required to launch the lobby. Total number of players (two teams and "either"). Should be even.
 - LobbyCooldown* - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc) 
 - TeamNames - The two team names the bot will split lobby members into
 
