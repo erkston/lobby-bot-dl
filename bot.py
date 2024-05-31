@@ -31,7 +31,7 @@ LobbyCooldown = config['LobbyCooldown']
 TeamNames = config['TeamNames']
 
 # declaring other stuff
-version = "v0.0.1"
+version = "v0.0.4"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
