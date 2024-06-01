@@ -1,15 +1,14 @@
 {
     "LobbyRole": "EU-pug",
     "LobbyRolePing": "True",
-    "LobbyAutoLaunch": "True",
+    "LobbyAutoLaunch": "False",
     "LobbyAutoReset": "True",
     "LobbyMessageTitle": "\uD83C\uDDEA\uD83C\uDDFA EU Playtest \uD83C\uDDEA\uD83C\uDDFA",
     "LobbyMessageColor": "001489",
     "ActiveMessageColor": "FFDD00",
-    "LobbyThreshold": "4",
-    "LobbyCooldown": "15m",
-    "TeamNames":[
-      "EUROPEAN",
-      "UNION"
-    ]
+    "LobbyThreshold": "12",
+    "LobbyCooldown": "75m",
+    "SapphireTeamName": "EUROPEAN",
+    "AmberTeamName": "UNION",
+    "EitherTeamName": "UK"
 }

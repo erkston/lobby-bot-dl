@@ -6,14 +6,14 @@
     "LobbyChannelName": "game-lobbies",
     "LobbyRole": "pugs",
     "LobbyRolePing": "True",
+    "LobbyAutoLaunch": "False",
     "LobbyAutoReset": "True",
     "LobbyMessageTitle": "My Lobby!",
     "LobbyMessageColor": "388727",
     "ActiveMessageColor": "715814",
     "LobbyThreshold": "12",
     "LobbyCooldown": "1h",
-    "TeamNames":[
-      "The Satire Name",
-      "The Amper Sand"
-    ]
+    "SapphireTeamName": "THE SATIRE NAME",
+    "AmberTeamName": "THE AMPER SAND",
+    "EitherTeamName": "EITHER"
 }

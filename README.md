@@ -19,7 +19,7 @@ If no presets are added to the /config/presets/ folder, default will be the only
 
 The bot will also send an admin panel to whoever issues the command to start the lobby:
 
-![Admin Panel](https://i.imgur.com/urofBgA.png)
+![Admin Panel](https://i.imgur.com/bwqjyrg.png)
 
 - Launch Lobby - Launches the lobby when LobbyAutoLaunch is False. If LobbyAutoLaunch is True this button does nothing
 - Reset Lobby - removes all players but keeps the lobby open
@@ -53,7 +53,7 @@ Settings:
 - LobbyMessageColor* and ActiveMessageColor* - Hex values used for the discord embed messages
 - LobbyThreshold* - The number of players required to launch the lobby. Total number of players (two teams and "either"). Should be even.
 - LobbyCooldown* - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc). Note that using the Admin Panel reset button will force the bot to do nothing when the cooldown has passed (lobby can be reset manually via Admin Panel)
-- TeamNames - The two team names the bot will split lobby members into
+- SapphireTeamName*, AmberTeamName*, and EitherTeamName - The team names for the lobby (left, right, and fill teams respectively)
 
 ### Slash Command Configuration (/lbset)
 Any option listed with an asterisk(*) above can be modified on the fly by using ```/lbset SETTING VALUE```. Tab completion also works for those settings that are settable using the command.
@@ -65,7 +65,8 @@ These setting changes will only affect the default config and not any other pres
 Examples:
 - ```/lbset LobbyThreshold 14```
 - ```/lbset LobbyCooldown 2h```
-- ```/lbset LobbyMessageTitle Cool Guys```
+- ```/lbset LobbyMessageTitle 6v6 Playtest```
+- ```/lbset AmberTeamName Teen Girl Squad```
 
 Setting names are not case-sensitive, however the setting values need to follow the same format as in the config or things will start breaking.
 Cooldown needs to have units (s, m, or h), colors are in hex, thresholds are integers, and Enable options are true/false.
@@ -76,7 +77,7 @@ Depending on the current state of the lobby and which setting you are changing i
 
 - ```/lbcom ReloadPresets```
   - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
-- ```/lbcom getcfg```
+- ```/lbcom GetCfg```
   -  Sends you a DM with most of the current default configuration settings
 
 ### Docker Images
