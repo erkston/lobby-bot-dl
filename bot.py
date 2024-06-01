@@ -258,17 +258,18 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         if selected_preset != "default":
             with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
                 tempconfig = json.load(jsonfile)
-                Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset,[],
+                Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
                                              [], [], 0, 0, temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                                              tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'],
-                                             tempconfig['SapphireTeamName'], tempconfig['AmberTeamName'], tempconfig['EitherTeamName'], 0))
+                                             tempconfig['SapphireTeamName'], tempconfig['AmberTeamName'], tempconfig['EitherTeamName'], 0, "none"))
                 print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
-                [], [], 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
-                LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, 0))
+                                         [], [], 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch,
+                                         LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold,
+                                         LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, 0, "none"))
             print(f'lobby{lobby_number}: Lobby created with default config')
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
@@ -335,7 +336,7 @@ async def on_ready():
     Lobbies.append(classes.Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
                          "preset", [], [], [], 0, 0, "role", "True",
                          "True", "True", "Title", "FFFFFF",
-                         "FFFFFF", 0, 0, 0, 0, 0, 0))
+                         "FFFFFF", 0, 0, 0, 0, 0, 0, "none"))
     print('Startup complete, awaiting command')
 
 
@@ -619,6 +620,101 @@ class DMmodal(discord.ui.Modal):
         await interaction.response.send_message(f"Sent DM to Lobby {lobby_number} players: \n {text}", ephemeral=True)
 
 
+class SettingModal(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_item(discord.ui.InputText(label="New Value", style=discord.InputTextStyle.short))
+
+    async def callback(self, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        value = self.children[0].value
+        if Lobbies[lobby_number].selected_setting == "none":
+            await interaction.response.send_message(f"Please select a setting in the dropdown", ephemeral=True)
+            return
+        elif Lobbies[lobby_number].selected_setting == "Server":
+            if Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"Lobby is already launched, can't change Server right now", ephemeral=True)
+                return
+            else:
+                Lobbies[lobby_number].server = value
+                await interaction.response.send_message(f"Lobby {lobby_number} Server changed to {Lobbies[lobby_number].server}", ephemeral=True)
+                await update_admin_panel(lobby_number)
+                return
+        elif Lobbies[lobby_number].selected_setting == "Password":
+            if Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"Lobby was already launched, can't change Password right now", ephemeral=True)
+                return
+            else:
+                Lobbies[lobby_number].password = value
+                await interaction.response.send_message(f"Lobby {lobby_number} Password changed to {Lobbies[lobby_number].password}", ephemeral=True)
+                await update_admin_panel(lobby_number)
+                return
+        elif Lobbies[lobby_number].selected_setting == "LobbyAutoLaunch":
+            if Lobbies[lobby_number].active or Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"Lobby is either full or already launched, can't change LobbyAutoLaunch right now", ephemeral=True)
+                return
+            else:
+                Lobbies[lobby_number].lobby_auto_launch = value
+                await interaction.response.send_message(f"Lobby {lobby_number} LobbyAutoLaunch changed to {Lobbies[lobby_number].lobby_auto_launch}", ephemeral=True)
+                await update_admin_panel(lobby_number)
+                return
+        elif Lobbies[lobby_number].selected_setting == "LobbyAutoReset":
+            if Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"Lobby was already launched, can't change LobbyAutoReset right now", ephemeral=True)
+                return
+            else:
+                Lobbies[lobby_number].lobby_auto_reset = value
+                await interaction.response.send_message(f"Lobby {lobby_number} LobbyAutoReset changed to {Lobbies[lobby_number].lobby_auto_reset}", ephemeral=True)
+                await update_admin_panel(lobby_number)
+                return
+        elif Lobbies[lobby_number].selected_setting == "LobbyMessageTitle":
+            Lobbies[lobby_number].lobby_message_title = value
+            await interaction.response.send_message(f"Lobby {lobby_number} LobbyMessageTitle changed to {Lobbies[lobby_number].lobby_message_title}", ephemeral=True)
+            await update_message(lobby_number)
+            await update_admin_panel(lobby_number)
+            return
+        elif Lobbies[lobby_number].selected_setting == "SapphireTeamName":
+            Lobbies[lobby_number].sapphire_name = value
+            await interaction.response.send_message(f"Lobby {lobby_number} SapphireTeamName changed to {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
+            await update_message(lobby_number)
+            await update_admin_panel(lobby_number)
+            return
+        elif Lobbies[lobby_number].selected_setting == "AmberTeamName":
+            Lobbies[lobby_number].amber_name = value
+            await interaction.response.send_message(f"Lobby {lobby_number} AmberTeamName changed to {Lobbies[lobby_number].amber_name}", ephemeral=True)
+            await update_message(lobby_number)
+            await update_admin_panel(lobby_number)
+            return
+        elif Lobbies[lobby_number].selected_setting == "EitherTeamName":
+            Lobbies[lobby_number].either_name = value
+            await interaction.response.send_message(f"Lobby {lobby_number} EitherTeamName changed to {Lobbies[lobby_number].either_name}", ephemeral=True)
+            await update_message(lobby_number)
+            await update_admin_panel(lobby_number)
+            return
+        elif Lobbies[lobby_number].selected_setting == "LobbyThreshold":
+            if Lobbies[lobby_number].active or Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"Lobby is either full or already launched, can't change LobbyThreshold right now", ephemeral=True)
+                return
+            else:
+                Lobbies[lobby_number].lobby_threshold = value
+                await interaction.response.send_message(f"Lobby {lobby_number} LobbyThreshold changed to {Lobbies[lobby_number].lobby_threshold}", ephemeral=True)
+                await update_message(lobby_number)
+                await update_admin_panel(lobby_number)
+                return
+        elif Lobbies[lobby_number].selected_setting == "LobbyCooldown":
+            if Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"Lobby was already launched, can't change LobbyCooldown right now", ephemeral=True)
+                return
+            else:
+                Lobbies[lobby_number].lobby_cooldown = value
+                await interaction.response.send_message(f"Lobby {lobby_number} LobbyCooldown changed to {Lobbies[lobby_number].lobby_cooldown}", ephemeral=True)
+                await update_message(lobby_number)
+                await update_admin_panel(lobby_number)
+                return
+        else:
+            await interaction.response.send_message(f"Setting not found!", ephemeral=True)
+
+
 class LobbyButtons(discord.ui.View):
     @discord.ui.button(label="Sapphire", style=discord.ButtonStyle.blurple)
     async def sapp_button_callback(self, button, interaction):
@@ -715,7 +811,7 @@ class LobbyButtons(discord.ui.View):
 
 
 class AdminButtons(discord.ui.View):
-    @discord.ui.button(label="Launch Lobby", style=discord.ButtonStyle.green, row=1)
+    @discord.ui.button(label="Launch Lobby", style=discord.ButtonStyle.green, row=0)
     async def launch_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received launch command from {interaction.user.display_name}')
@@ -728,7 +824,7 @@ class AdminButtons(discord.ui.View):
         else:
             await interaction.response.send_message(f"Can't launch yet, lobby is not full", ephemeral=True)
 
-    @discord.ui.button(label="Reset Lobby", style=discord.ButtonStyle.blurple, row=1)
+    @discord.ui.button(label="Reset Lobby", style=discord.ButtonStyle.blurple, row=0)
     async def reset_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received lobby reset command from {interaction.user.display_name}')
@@ -736,21 +832,21 @@ class AdminButtons(discord.ui.View):
         await reset_lobby(lobby_number)
         await interaction.response.send_message(f"Lobby {lobby_number} reset", ephemeral=True)
 
-    @discord.ui.button(label="Close Lobby", style=discord.ButtonStyle.red, row=1)
+    @discord.ui.button(label="Close Lobby", style=discord.ButtonStyle.red, row=0)
     async def close_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received lobby close command from {interaction.user.display_name}')
         await close_lobby(lobby_number)
         await interaction.response.send_message(f"Lobby {lobby_number} closed", ephemeral=True)
 
-    @discord.ui.button(label="Shuffle Teams", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Shuffle Teams", style=discord.ButtonStyle.secondary, row=1)
     async def shuffle_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received shuffle command from {interaction.user.display_name}')
         await shuffle_teams(lobby_number)
         await interaction.response.send_message(f"Teams have been shuffled", ephemeral=True)
 
-    @discord.ui.button(label="Resend connect info", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="Resend connect info", style=discord.ButtonStyle.secondary, row=1)
     async def resend_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received resend info command from {interaction.user.display_name}')
@@ -760,11 +856,71 @@ class AdminButtons(discord.ui.View):
         else:
             await interaction.response.send_message(f"Lobby is not active, sent nothing", ephemeral=True)
 
-    @discord.ui.button(label="DM Players", style=discord.ButtonStyle.secondary, row=2)
+    @discord.ui.button(label="DM Players", style=discord.ButtonStyle.secondary, row=1)
     async def dm_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received player dm command from {interaction.user.display_name}')
         await interaction.response.send_modal(DMmodal(title=f"DM Lobby {lobby_number} Players"))
+
+    @discord.ui.select(placeholder="Select a setting to change", row=2, min_values=1, max_values=1,
+                       options=[
+                           discord.SelectOption(
+                               label="Server",
+                               description="Change server address and port"
+                           ),
+                           discord.SelectOption(
+                               label="Password",
+                               description="Change server password"
+                           ),
+                           discord.SelectOption(
+                               label="LobbyAutoLaunch",
+                               description="Change auto-launch behavior"
+                           ),
+                           discord.SelectOption(
+                               label="LobbyAutoReset",
+                               description="Change auto-reset behavior"
+                           ),
+                           discord.SelectOption(
+                               label="LobbyMessageTitle",
+                               description="Change the title of the lobby message"
+                           ),
+                           discord.SelectOption(
+                               label="SapphireTeamName",
+                               description="Change the Sapphire team name"
+                           ),
+                           discord.SelectOption(
+                               label="AmberTeamName",
+                               description="Change the Amber team name"
+                           ),
+                           discord.SelectOption(
+                               label="EitherTeamName",
+                               description="Change name for fill players"
+                           ),
+                           discord.SelectOption(
+                               label="LobbyThreshold",
+                               description="Change the lobby player threshold"
+                           ),
+                           discord.SelectOption(
+                               label="LobbyCooldown",
+                               description="Change reset cooldown if LobbyAutoReset is True"
+                           )
+                       ]
+                       )
+    async def select_callback(self, select, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        Lobbies[lobby_number].selected_setting = select.values[0]
+        print(f"lobby{lobby_number}: Lobbies[lobby_number].selected_setting = {Lobbies[lobby_number].selected_setting}")
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Change Setting", style=discord.ButtonStyle.blurple, row=3)
+    async def setting_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received change setting command from {interaction.user.display_name}')
+        if Lobbies[lobby_number].selected_setting == "none":
+            await interaction.response.send_message(f"Please select a setting in the dropdown", ephemeral=True)
+            return
+        else:
+            await interaction.response.send_modal(SettingModal(title=f"Change {Lobbies[lobby_number].selected_setting} Setting"))
 
 
 bot.run(DiscordBotToken)
