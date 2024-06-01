@@ -259,7 +259,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
                 tempconfig = json.load(jsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset,[],
-                                             [], [], 0, temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
+                                             [], [], 0, 0, temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                                              tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'],
                                              tempconfig['SapphireTeamName'], tempconfig['AmberTeamName'], tempconfig['EitherTeamName'], 0))
@@ -267,7 +267,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
-                [], [], 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
+                [], [], 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
                 LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, 0))
             print(f'lobby{lobby_number}: Lobby created with default config')
         await update_message(lobby_number)
@@ -333,7 +333,7 @@ async def on_ready():
             await message.delete()
     print('------------------------------------------------------')
     Lobbies.append(classes.Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
-                         "preset", [], [], [], 0, "role", "True",
+                         "preset", [], [], [], 0, 0, "role", "True",
                          "True", "True", "Title", "FFFFFF",
                          "FFFFFF", 0, 0, 0, 0, 0, 0))
     print('Startup complete, awaiting command')
@@ -358,12 +358,23 @@ async def update_admin_panel(lobby_number):
     else:
         print(f'lobby{lobby_number}: Admin panel message not found')
         return
-    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
-                              description='Lobby will launch automatically when full')
+    if Lobbies[lobby_number].active == 0:
+        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
+                                  description='Lobby is open and will launch automatically when full')
+        else:
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
+                                  description='Lobby is open and will not launch until you hit the green button')
     else:
+        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
+                                  description='Lobby is full and launching now...')
+        else:
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
+                                  description='Lobby is full and waiting for you hit the green button')
+    if Lobbies[lobby_number].launched == 1:
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
-                              description='After it fills, lobby will wait until you press the green button to launch')
+                              description='Lobby is launched! DMs were sent to all players')
 
     setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nLobbyThreshold\nLobbyCooldown"
     value_string = (f"{Lobbies[lobby_number].server}\n{Lobbies[lobby_number].password}\n{Lobbies[lobby_number].preset}\n{Lobbies[lobby_number].lobby_auto_launch}\n"
@@ -412,12 +423,12 @@ async def update_message(lobby_number):
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
         await lobby_message.edit(embed=embed, view=LobbyButtons(timeout=None))
-    elif current_lobby_size == int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active:
-        print(f'lobby{lobby_number}: Lobby activated, displaying final player list')
+    elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and not Lobbies[lobby_number].launched:
+        print(f'lobby{lobby_number}: Lobby activated but not launched, displaying current player list')
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             embed = discord.Embed(title=f'Lobby is starting!', description='Check your DMs for connect info', color=int(ActiveMessageColor, 16))
         else:
-            embed = discord.Embed(title=f'Lobby is starting!', description='Waiting for host to launch...', color=int(ActiveMessageColor, 16))
+            embed = discord.Embed(title=f'Lobby is full!', description='Waiting for host to launch...', color=int(ActiveMessageColor, 16))
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
@@ -425,7 +436,16 @@ async def update_message(lobby_number):
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
         await lobby_message.edit(embed=embed, view=None)
-
+    elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and Lobbies[lobby_number].launched:
+        print(f'lobby{lobby_number}: Lobby activated and launched, displaying final player list')
+        embed = discord.Embed(title=f'Lobby is starting!', description='Check your DMs for connect info', color=int(ActiveMessageColor, 16))
+        embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
+        embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
+        embed.add_field(name='\u200b', value='\u200b', inline=False)
+        embed.timestamp = datetime.datetime.now()
+        embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
+        lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
+        await lobby_message.edit(embed=embed, view=None)
     else:
         print(f'lobby{lobby_number}: Lobby threshold met! ({current_lobby_size}/{Lobbies[lobby_number].lobby_threshold})')
         await activate_lobby(lobby_number)
@@ -440,9 +460,11 @@ async def activate_lobby(lobby_number):
         await bot.change_presence(status=discord.Status.idle, activity=discord.Game(f"{BotGame}"))
         if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, waiting for admin')
+            await update_admin_panel(lobby_number)
             await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to start")
             return
         else:
+            await update_admin_panel(lobby_number)
             await launch_lobby(lobby_number)
     else:
         print(f'lobby{lobby_number}: Lobby was already started, doing nothing...')
@@ -450,19 +472,26 @@ async def activate_lobby(lobby_number):
 
 
 async def launch_lobby(lobby_number):
-    await send_lobby_info(lobby_number)
-    await asyncio.sleep(convert_to_seconds(Lobbies[lobby_number].lobby_cooldown))
-    print(f'lobby{lobby_number}: LobbyCooldown ({Lobbies[lobby_number].lobby_cooldown}) has passed since lobby was started')
-    if Lobbies[lobby_number].manual_mode:
-        print(f'lobby{lobby_number}: Admin has previously manually reset this lobby, doing nothing')
-        return
-    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_reset):
-        print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, resetting...')
-        await reset_lobby(lobby_number)
-        return
+    if not Lobbies[lobby_number].launched:
+        Lobbies[lobby_number].launched = 1
+        await send_lobby_info(lobby_number)
+        await update_admin_panel(lobby_number)
+        await update_message(lobby_number)
+        await asyncio.sleep(convert_to_seconds(Lobbies[lobby_number].lobby_cooldown))
+        print(f'lobby{lobby_number}: LobbyCooldown ({Lobbies[lobby_number].lobby_cooldown}) has passed since lobby was started')
+        if Lobbies[lobby_number].manual_mode:
+            print(f'lobby{lobby_number}: Admin has previously manually reset this lobby, doing nothing')
+            return
+        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_reset):
+            print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, resetting...')
+            await reset_lobby(lobby_number)
+            return
+        else:
+            print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, closing lobby...')
+            await close_lobby(lobby_number)
+            return
     else:
-        print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, closing lobby...')
-        await close_lobby(lobby_number)
+        print(f'lobby{lobby_number}: Lobby was already launched, doing nothing...')
         return
 
 
@@ -522,10 +551,10 @@ async def send_lobby_info(lobby_number):
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
     for player in Lobbies[lobby_number].sapp_players:
         await player.send(
-            f"\nPlease join {Lobbies[lobby_number].sapphire_name} \n {connect_string} \n Password: {Lobbies[lobby_number].password}")
+            f"\nPlease join {Lobbies[lobby_number].sapphire_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}")
     for player in Lobbies[lobby_number].ambr_players:
         await player.send(
-            f"\nPlease join {Lobbies[lobby_number].amber_name} \n {connect_string} \n Password: {Lobbies[lobby_number].password}")
+            f"\nPlease join {Lobbies[lobby_number].amber_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}")
 
 
 async def update_all_lobby_messages():
@@ -538,10 +567,12 @@ async def update_all_lobby_messages():
 
 async def reset_lobby(lobby_number):
     Lobbies[lobby_number].active = 0
+    Lobbies[lobby_number].launched = 0
     Lobbies[lobby_number].sapp_players.clear()
     Lobbies[lobby_number].ambr_players.clear()
     Lobbies[lobby_number].fill_players.clear()
     await update_message(lobby_number)
+    await update_admin_panel(lobby_number)
 
 
 async def close_lobby(lobby_number):
@@ -561,7 +592,7 @@ async def is_message_deleted(channel, message_id):
         return True
 
 
-async def convert_to_seconds(s):
+def convert_to_seconds(s):
     return int(timedelta(**{
         Units.get(m.group('unit').lower(), 'seconds'): float(m.group('val'))
         for m in re.finditer(r'(?P<val>\d+(\.\d+)?)(?P<unit>[smhdw]?)', s, flags=re.I)
