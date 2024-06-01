@@ -457,7 +457,6 @@ async def activate_lobby(lobby_number):
         Lobbies[lobby_number].active = 1
         await assign_teams(lobby_number)
         await update_message(lobby_number)
-        await bot.change_presence(status=discord.Status.idle, activity=discord.Game(f"{BotGame}"))
         if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, waiting for admin')
             await update_admin_panel(lobby_number)
@@ -473,6 +472,7 @@ async def activate_lobby(lobby_number):
 
 async def launch_lobby(lobby_number):
     if not Lobbies[lobby_number].launched:
+        await bot.change_presence(status=discord.Status.idle, activity=discord.Game(f"{BotGame}"))
         Lobbies[lobby_number].launched = 1
         await send_lobby_info(lobby_number)
         await update_admin_panel(lobby_number)
@@ -573,6 +573,9 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].fill_players.clear()
     await update_message(lobby_number)
     await update_admin_panel(lobby_number)
+    await bot.change_presence(status=discord.Status.online,
+                              activity=discord.Activity(type=discord.ActivityType.listening,
+                                                        name=f"#{lobby_channel}"))
 
 
 async def close_lobby(lobby_number):
