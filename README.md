@@ -19,7 +19,7 @@ If no presets are added to the /config/presets/ folder, default will be the only
 
 The bot will also send an admin panel to whoever issues the command to start the lobby:
 
-![Admin Panel](https://i.imgur.com/LyIeob9.png)
+![Admin Panel](https://i.imgur.com/eyLJZda.png)
 
 - Launch Lobby - Launches the lobby when LobbyAutoLaunch is False. If LobbyAutoLaunch is True this button does nothing
 - Reset Lobby - removes all players but keeps the lobby open
@@ -27,6 +27,11 @@ The bot will also send an admin panel to whoever issues the command to start the
 - Shuffle Teams - Randomizes teams, if there are any fill players it will move them to a team
 - Resend Connect Info - resend server address and password to lobby members via DM. Only works after the lobby has launched
 - DM Players - opens a modal to send any text to all current lobby players via DM
+- Kick Player - Kicks a player from the lobby, requires their discord User ID.
+- Ban/Unban Players - Bans a player if they're not already banned, or unbans them if they are already banned. Banning a player also kicks them from any open lobbies. Bans are bot-wide and not for a particular lobby and will also persist across bot restarts. Requires discord User ID.
+
+For kick and ban functions the easiest way to get a User ID is to enable Developer Mode in Discord (Settings > Advanced). 
+Once enabled you can get someone's User ID by right clicking on them and selecting Copy User ID.
 
 The bottom dropdown and Change Setting button allows you to change some settings. If the lobby has already filled or launched some settings may be unavailable.
 
@@ -36,8 +41,10 @@ Select what variable you want to change, then hit the Change Setting button. A w
 
 ![Setting Modal](https://i.imgur.com/fSrP4vR.png)
 
+Any settings changed this way are only for that single lobby and will not change any of the default or preset settings.
+
 ### Discord set-up
-The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires permission to mention roles (and ability to mention those roles in server settings).
+The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires the "Members" Privileged Gateway Intent, permission to mention roles, and the ability to mention those roles in server settings.
 The server should have a dedicated channel (see config below)
 
 ### Configuration
@@ -81,12 +88,14 @@ Cooldown needs to have units (s, m, or h), colors are in hex, thresholds are int
 
 Depending on the current state of the lobby and which setting you are changing it may update the lobby message immediately, or it may not be visible other than the bot's reply to your command.
 
-### Other Commands (/lbcom)
+### Other Commands (/lbcom and /lbban)
 
 - ```/lbcom ReloadPresets```
   - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
 - ```/lbcom GetCfg```
   -  Sends you a DM with most of the current default configuration settings
+- ```/lbban USERID```
+  - Toggles ban status on a user. USERID must be a 20 digit Discord User ID
 
 ### Docker Images
 See [Dockerhub](https://hub.docker.com/r/erkston/lobby-bot-dl)

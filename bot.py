@@ -37,6 +37,7 @@ version = "v0.0.5"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
+Bans = []
 Presets = []
 presets_string = ""
 LobbyCount = 0
@@ -44,6 +45,13 @@ allowed_mentions = discord.AllowedMentions(roles=True)
 lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
                     "LobbyThreshold", "LobbyCooldown", "SapphireTeamName", "AmberTeamName", "EitherTeamName"]
 lbcomCommandList = ["GetCfg", "ReloadPresets"]
+
+
+with open("bans.json", "r") as bansjsonfile:
+    JSONBans = json.load(bansjsonfile)
+i = 0
+for ban in JSONBans:
+    Bans.append([ban[0], ban[1], ban[2]])
 
 
 def load_presets():
@@ -86,6 +94,7 @@ class Bot(discord.Bot):
 
 
 intents = discord.Intents.default()
+intents.members = True
 bot = Bot(intents=intents)
 
 
@@ -210,7 +219,23 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
             load_presets()
             await ctx.respond(f'Presets reloaded. Available: {presets_string}', ephemeral=True)
             print(f'{ctx.author.display_name} reloaded presets. Available: {presets_string}')
+        else:
+            await ctx.respond(f'Command not found', ephemeral=True)
+    else:
+        await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
+        print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
 
+
+@bot.command(name="lbban", description="Toggle ban status of a user")
+async def lbban(ctx, user_id: discord.Option(description="20 digit User ID of the user to ban or unban")):
+    if bot_admin_role in ctx.author.roles:
+        print(f'Received lbban command from {ctx.author.display_name}, executing command...')
+        player = bot_guild.get_member(int(f"{user_id}"))
+        banned = await banunban_player(player)
+        if banned:
+            await ctx.respond(f"Player {player.display_name} banned", ephemeral=True)
+        else:
+            await ctx.respond(f"Player {player.display_name} unbanned", ephemeral=True)
     else:
         await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
         print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
@@ -244,11 +269,9 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                             temp_lobby_role = role
                             print(f'lobby{lobby_number}: Lobby Role found: "{temp_lobby_role.name}" (ID: {temp_lobby_role.id})')
                 lobby_role_ping = tempconfig['LobbyRolePing']
-                lobby_auto_launch = tempconfig['LobbyAutoLaunch']
                 lobby_message = await initialize_lobby(lobby_number, temp_lobby_role, distutils.util.strtobool(lobby_role_ping))
         else:
             lobby_message = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(LobbyRolePing))
-            lobby_auto_launch = LobbyAutoLaunch
 
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
 
@@ -306,7 +329,9 @@ async def on_ready():
     print('------------------------------------------------------')
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print(f'{bot.user} is connected to the following guild(s):')
+    global bot_guild
     for guild in bot.guilds:
+        bot_guild = guild
         print(f'{guild.name} (id: {guild.id})')
 
     global lobby_channel
@@ -410,7 +435,8 @@ async def update_message(lobby_number):
         fill_players_string = "None"
     current_lobby_size = len(sapp_players) + len(ambr_players) + len(fill_players)
 
-    if current_lobby_size < int(Lobbies[lobby_number].lobby_threshold) and not Lobbies[lobby_number].active:
+    if current_lobby_size < int(Lobbies[lobby_number].lobby_threshold):
+        Lobbies[lobby_number].active = 0
         print(f'lobby{lobby_number}: Lobby threshold not met ({current_lobby_size}<{Lobbies[lobby_number].lobby_threshold}), displaying lobby information')
         embed = discord.Embed(title=f'{Lobbies[lobby_number].lobby_message_title}',
                               description='Join using buttons below, server info will be sent via DM when the lobby is full. '
@@ -588,6 +614,62 @@ async def close_lobby(lobby_number):
         await admin_message.delete()
 
 
+async def kick_player(lobby_number, user_id):
+    if Lobbies[lobby_number].launched:
+        return 0
+    player = bot_guild.get_member(int(f"{user_id}"))
+    i = 0
+    while i < len(Lobbies[lobby_number].sapp_players):
+        if Lobbies[lobby_number].sapp_players[i].id == player.id:
+            Lobbies[lobby_number].sapp_players.pop(i)
+            await update_message(lobby_number)
+            print(f'lobby{lobby_number}: Player {player.display_name} kicked')
+            return 1
+        i += 1
+    i = 0
+    while i < len(Lobbies[lobby_number].ambr_players):
+        if Lobbies[lobby_number].ambr_players[i].id == player.id:
+            Lobbies[lobby_number].ambr_players.pop(i)
+            await update_message(lobby_number)
+            print(f'lobby{lobby_number}: Player {player.display_name} kicked')
+            return 1
+        i += 1
+    i = 0
+    while i < len(Lobbies[lobby_number].fill_players):
+        if Lobbies[lobby_number].fill_players[i].id == player.id:
+            Lobbies[lobby_number].fill_players.pop(i)
+            await update_message(lobby_number)
+            print(f'lobby{lobby_number}: Player {player.display_name} kicked')
+            return 1
+        i += 1
+    return 0
+
+
+async def banunban_player(player):
+    i = 0
+    for existing_ban in Bans:
+        if player.id == existing_ban[2]:
+            Bans.pop(i)
+            print(f'Player {player.display_name} unbanned')
+            await write_bans_to_file()
+            return 0
+        i += 1
+    i = 1
+    while i < len(Lobbies):
+        await kick_player(i, player.id)
+        i += 1
+    Bans.append([player.display_name, player.name, player.id])
+    print(f'Player {player.display_name} banned')
+    await write_bans_to_file()
+    return 1
+
+
+async def write_bans_to_file():
+    bans_json_object = json.dumps(Bans, indent=4)
+    with open("bans.json", "w") as bansjsonfile:
+        bansjsonfile.write(bans_json_object)
+
+
 async def is_message_deleted(channel, message_id):
     try:
         await channel.fetch_message(message_id)
@@ -618,6 +700,39 @@ class DMmodal(discord.ui.Modal):
         for player in Lobbies[lobby_number].fill_players:
             await player.send(f"{text}")
         await interaction.response.send_message(f"Sent DM to Lobby {lobby_number} players: \n {text}", ephemeral=True)
+
+
+class KickModal(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_item(discord.ui.InputText(label="User ID", style=discord.InputTextStyle.short))
+
+    async def callback(self, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        userid = self.children[0].value
+        player = bot_guild.get_member(int(f"{userid}"))
+        kicked = await kick_player(lobby_number, player.id)
+        if kicked:
+            await interaction.response.send_message(f"Player {player.display_name} kicked", ephemeral=True)
+            return
+        else:
+            await interaction.response.send_message(f"Player {player.display_name} not found or could not be kicked", ephemeral=True)
+            return
+
+
+class BanModal(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_item(discord.ui.InputText(label="User ID", style=discord.InputTextStyle.short))
+
+    async def callback(self, interaction):
+        userid = self.children[0].value
+        player = bot_guild.get_member(int(f"{userid}"))
+        banned = await banunban_player(player)
+        if banned:
+            await interaction.response.send_message(f"Player {player.display_name} banned", ephemeral=True)
+        else:
+            await interaction.response.send_message(f"Player {player.display_name} unbanned", ephemeral=True)
 
 
 class SettingModal(discord.ui.Modal):
@@ -720,6 +835,11 @@ class LobbyButtons(discord.ui.View):
     async def sapp_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
+        for existing_ban in Bans:
+            if interactor.id == existing_ban[2]:
+                print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+                return
         if interactor in Lobbies[lobby_number].ambr_players:
             await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
             return
@@ -751,6 +871,11 @@ class LobbyButtons(discord.ui.View):
     async def ambr_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
+        for existing_ban in Bans:
+            if interactor.id == existing_ban[2]:
+                print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+                return
         if interactor in Lobbies[lobby_number].sapp_players:
             await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
             return
@@ -790,6 +915,11 @@ class LobbyButtons(discord.ui.View):
     async def fill_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
+        for existing_ban in Bans:
+            if interactor.id == existing_ban[2]:
+                print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+                return
         if interactor in Lobbies[lobby_number].sapp_players:
             await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
             return
@@ -862,7 +992,19 @@ class AdminButtons(discord.ui.View):
         print(f'lobby{lobby_number}: Received player dm command from {interaction.user.display_name}')
         await interaction.response.send_modal(DMmodal(title=f"DM Lobby {lobby_number} Players"))
 
-    @discord.ui.select(placeholder="Select a setting to change", row=2, min_values=1, max_values=1,
+    @discord.ui.button(label="Kick Player", style=discord.ButtonStyle.red, row=2)
+    async def kick_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received player kick command from {interaction.user.display_name}')
+        await interaction.response.send_modal(KickModal(title=f"Kick Player"))
+
+    @discord.ui.button(label="Ban/Unban Player", style=discord.ButtonStyle.red, row=2)
+    async def ban_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received player ban command from {interaction.user.display_name}')
+        await interaction.response.send_modal(BanModal(title=f"Ban/Unban Player"))
+
+    @discord.ui.select(placeholder="Select a setting to change", row=3, min_values=1, max_values=1,
                        options=[
                            discord.SelectOption(
                                label="Server",
@@ -912,7 +1054,7 @@ class AdminButtons(discord.ui.View):
         print(f"lobby{lobby_number}: Lobbies[lobby_number].selected_setting = {Lobbies[lobby_number].selected_setting}")
         await interaction.response.defer()
 
-    @discord.ui.button(label="Change Setting", style=discord.ButtonStyle.blurple, row=3)
+    @discord.ui.button(label="Change Setting", style=discord.ButtonStyle.blurple, row=4)
     async def setting_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received change setting command from {interaction.user.display_name}')
