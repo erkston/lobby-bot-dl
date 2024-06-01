@@ -46,11 +46,12 @@ Settings:
 - LobbyChannelName - The Channel name the bot should use to send messages
 - LobbyRole - Name of the role the bot will @mention when @LobbyRolePing is set to True
 - LobbyRolePing* - When True the bot will send a @mention of LobbyRole when a new lobby is opened
-- LobbyAutoReset* - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely.
+- LobbyAutoLaunch* - When True will automatically send connect info to lobby members. When False it will wait for the Admin to press the Launch button on the Admin Panel.
+- LobbyAutoReset* - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely. Note that using the Admin Panel reset button will ignore this setting.
 - LobbyMessageTitle* - Title of the discord message showing the lobby information
 - LobbyMessageColor* and ActiveMessageColor* - Hex values used for the discord embed messages
 - LobbyThreshold* - The number of players required to launch the lobby. Total number of players (two teams and "either"). Should be even.
-- LobbyCooldown* - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc) 
+- LobbyCooldown* - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc). Note that using the Admin Panel reset button will force the bot to do nothing when the cooldown has passed (lobby can be reset manually via Admin Panel)
 - TeamNames - The two team names the bot will split lobby members into
 
 ### Slash Command Configuration (/lbset)
