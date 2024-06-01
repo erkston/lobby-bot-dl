@@ -33,7 +33,7 @@ SapphireTeamName = config['SapphireTeamName']
 AmberTeamName = config['AmberTeamName']
 EitherTeamName = config['EitherTeamName']
 
-version = "v0.0.5"
+version = "v0.1.0"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
