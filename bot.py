@@ -7,12 +7,11 @@ from distutils import util
 import random
 from zoneinfo import ZoneInfo
 import discord
-# from discord.ext import tasks COMMENTSNOTSND
 import json
 import re
+import os
 from datetime import timedelta
 
-# importing config and reading variables
 with open("config/config.json", "r") as jsonfile:
     config = json.load(jsonfile)
 DiscordBotToken = config['DiscordBotToken']
@@ -22,6 +21,7 @@ BotAdminRole = config['BotAdminRole']
 LobbyChannelName = config['LobbyChannelName']
 LobbyRole = config['LobbyRole']
 LobbyRolePing = config['LobbyRolePing']
+LobbyAutoLaunch = config['LobbyAutoLaunch']
 LobbyAutoReset = config['LobbyAutoReset']
 LobbyMessageTitle = config['LobbyMessageTitle']
 LobbyMessageColor = config['LobbyMessageColor']
@@ -30,15 +30,22 @@ LobbyThreshold = config['LobbyThreshold']
 LobbyCooldown = config['LobbyCooldown']
 TeamNames = config['TeamNames']
 
-# declaring other stuff
 version = "v0.0.4"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
+Configs = []
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
-lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
+lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
                     "LobbyThreshold", "LobbyCooldown", "GetCfg"]
+
+for file in os.listdir("config/"):
+    if file.endswith(".json"):
+        if os.path.splitext(file)[0] == "config":
+            Configs.append("default")
+        else:
+            Configs.append(os.path.splitext(file)[0])
 
 
 # convert config time intervals into seconds (once) for use in asyncio.sleep
@@ -76,14 +83,14 @@ class Bot(discord.Bot):
         await super().close()
 
 
-# need members intent for detecting removal of reactions
 intents = discord.Intents.default()
-intents.members = True
 bot = Bot(intents=intents)
 
 
 class Lobby:
-    def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, sapp_players, ambr_players, fill_players, active):
+    def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, sapp_players, ambr_players, fill_players,
+                 active, lobby_role, lobby_role_ping, lobby_auto_launch, lobby_auto_reset, lobby_message_title, lobby_message_color,
+                 active_message_color, lobby_threshold, lobby_cooldown, team_names):
         self.number = lobby_number
         self.message_id = message_id
         self.host = host
@@ -94,6 +101,16 @@ class Lobby:
         self.ambr_players = ambr_players
         self.fill_players = fill_players
         self.active = active
+        self.lobby_role = lobby_role
+        self.lobby_role_ping = lobby_role_ping
+        self.lobby_auto_launch = lobby_auto_launch
+        self.lobby_auto_reset = lobby_auto_reset
+        self.lobby_message_title = lobby_message_title
+        self.lobby_message_color = lobby_message_color
+        self.active_message_color = active_message_color
+        self.lobby_threshold = lobby_threshold
+        self.lobby_cooldown = lobby_cooldown
+        self.team_names = team_names
 
 
 @bot.command(name="lbset", description="Change setting values or get config readout")
@@ -115,6 +132,12 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
             LobbyRolePing = value
             await ctx.respond(f'LobbyRolePing has been set to "{LobbyRolePing}"', ephemeral=True)
             print(f'LobbyRolePing changed to {LobbyRolePing} by {ctx.author.display_name}')
+
+        elif setting.casefold() == "lobbyautolaunch":
+            global LobbyAutoLaunch
+            LobbyAutoLaunch = value
+            await ctx.respond(f'LobbyAutoLaunch has been set to "{LobbyAutoLaunch}"', ephemeral=True)
+            print(f'LobbyAutoLaunch changed to {LobbyAutoLaunch} by {ctx.author.display_name}')
 
         elif setting.casefold() == "lobbyautoreset":
             global LobbyAutoReset
@@ -157,7 +180,7 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
             print(f'LobbyCooldown changed to {LobbyCooldown} ({LobbyCooldownSeconds}s) by {ctx.author.display_name}')
 
         elif setting.casefold() == "getcfg":
-            await ctx.author.send(f'Current configuration:\n'
+            await ctx.author.send(f'Current default configuration:\n'
                                   f'Version: {version}\n'
                                   f'BotTimezone: {BotTimezone}\n'
                                   f'BotGame: {BotGame}\n'
@@ -165,6 +188,7 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
                                   f'LobbyChannelName: {LobbyChannelName}\n'
                                   f'LobbyRole: {LobbyRole}\n'
                                   f'LobbyRolePing: {LobbyRolePing}\n'
+                                  f'LobbyAutoLaunch: {LobbyAutoLaunch}\n'
                                   f'LobbyAutoReset: {LobbyAutoReset}\n'
                                   f'LobbyMessageTitle: {LobbyMessageTitle}\n'
                                   f'LobbyMessageColor: {LobbyMessageColor}\n'
@@ -185,18 +209,56 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
 
 
 @bot.command(name="startlobby", description="Start a lobby")
-async def startlobby(ctx, server, password):
+async def startlobby(ctx, server: discord.Option(str, description="Enter the servers address and port (address:port) "),
+                     password: discord.Option(str, description="Enter the servers password"),
+                     config: discord.Option(str, description=f"Available configs: {Configs} (Case sensitive)")):
     if bot_admin_role in ctx.author.roles:
-        global LobbyCount
-        global Lobbies
+        global lobby_role, LobbyRolePing
+        selected_config = config
+        if selected_config in Configs:
+            print(f"startlobby: Found Selected config: {selected_config}")
+        else:
+            print(f"startlobby: Could not find selected config: {selected_config}, aborting command")
+            await ctx.respond("Could not find that config, please try again", ephemeral=True)
+            return
+        global LobbyCount, Lobbies
         LobbyCount += 1
         lobby_number = LobbyCount
         print(f'lobby{lobby_number}: Received lobby request from {ctx.author.display_name}, starting Lobby #{lobby_number}')
-        lobby_message = await initialize_lobby(lobby_number)
+
+        if selected_config != "default":
+            with open(f"config/{selected_config}.json", "r") as jsonfile:
+                tempconfig = json.load(jsonfile)
+                TempLobbyRole = tempconfig['LobbyRole']
+                for guild in bot.guilds:
+                    for role in guild.roles:
+                        if role.name == TempLobbyRole:
+                            temp_lobby_role = role
+                            print(f'lobby{lobby_number}: Lobby Role found: "{temp_lobby_role.name}" (ID: {temp_lobby_role.id})')
+                lobby_role_ping = tempconfig['LobbyRolePing']
+                lobby_message = await initialize_lobby(lobby_number, temp_lobby_role, distutils.util.strtobool(lobby_role_ping))
+        else:
+            lobby_message = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(LobbyRolePing))
+
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel")
         admin_panel_msg = await ctx.author.send(embed=embed, view=AdminButtons(timeout=None))
-        Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [], [], [], 0))
+
+        if selected_config != "default":
+            with open(f"config/{selected_config}.json", "r") as jsonfile:
+                tempconfig = json.load(jsonfile)
+
+                Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
+                    [], [], 0, temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
+                    tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
+                    tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'], tempconfig['TeamNames']))
+                print(f'lobby{lobby_number}: Lobby created with config {selected_config}')
+        else:
+            global LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames
+            Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
+                [], [], 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
+                LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames))
+            print(f'lobby{lobby_number}: Lobby created with default config')
         await update_message(lobby_number)
 
     else:
@@ -211,12 +273,14 @@ async def on_ready():
     systemtime = datetime.datetime.now()
     bottime = datetime.datetime.now(ZoneInfo(BotTimezone))
     print(f'System Time: {systemtime.strftime("%Y-%m-%d %H:%M:%S")} Bot Time: {bottime.strftime("%Y-%m-%d %H:%M:%S")} (Timezone: {BotTimezone})')
-    print('Config options:')
+    print(f'Available Configs: {Configs}')
+    print('Default config options:')
     print(f'BotGame: {BotGame}')
     print(f'BotAdminRole: {BotAdminRole}')
     print(f'LobbyChannelName: {LobbyChannelName}')
     print(f'LobbyRole: {LobbyRole}')
     print(f'LobbyRolePing: {LobbyRolePing}')
+    print(f'LobbyAutoLaunch: {LobbyAutoLaunch}')
     print(f'LobbyAutoReset: {LobbyAutoReset}')
     print(f'LobbyMessageTitle: {LobbyMessageTitle}')
     print(f'LobbyMessageColor: {LobbyMessageColor}')
@@ -255,15 +319,18 @@ async def on_ready():
             print(f'Found old message from {bot.user}, deleting it')
             await message.delete()
     print('------------------------------------------------------')
-    Lobbies.append(Lobby(0, 0, "host", 0, "0.0.0.0", "pass", [], [], [], 0))
+    Lobbies.append(Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
+                         [], [], [], 0, "role", "True",
+                         "True", "True", "Title", "FFFFFF",
+                         "FFFFFF", 0, 0, 0))
     print('Startup complete, awaiting command')
 
 
-async def initialize_lobby(lobby_number):
+async def initialize_lobby(lobby_number, temp_lobby_role, lobby_role_ping):
     print(f'lobby{lobby_number}: Initializing lobby message')
-    if distutils.util.strtobool(LobbyRolePing):
-        print(f'lobby{lobby_number}: LobbyRolePing is {LobbyRolePing}, sending ping')
-        await lobby_channel.send(f'{lobby_role.mention}')
+    if lobby_role_ping:
+        print(f'lobby{lobby_number}: LobbyRolePing is {lobby_role_ping}, sending ping')
+        await lobby_channel.send(f'{temp_lobby_role.mention}')
     embed = discord.Embed(title='Reticulating Splines...', color=0xb4aba0)
     lobby_message = await lobby_channel.send(embed=embed)
     await bot.change_presence(status=discord.Status.online,
@@ -273,7 +340,6 @@ async def initialize_lobby(lobby_number):
 
 
 async def update_message(lobby_number):
-    global LobbyThreshold
     global lobby_channel
     sapp_players = []
     ambr_players = []
@@ -295,27 +361,27 @@ async def update_message(lobby_number):
         fill_players_string = "None"
     current_lobby_size = len(sapp_players) + len(ambr_players) + len(fill_players)
 
-    if current_lobby_size < int(LobbyThreshold) and not Lobbies[lobby_number].active:
-        print(f'lobby{lobby_number}: Lobby threshold not met ({current_lobby_size}<{LobbyThreshold}), displaying lobby information')
-        embed = discord.Embed(title=f'{LobbyMessageTitle}',
+    if current_lobby_size < int(Lobbies[lobby_number].lobby_threshold) and not Lobbies[lobby_number].active:
+        print(f'lobby{lobby_number}: Lobby threshold not met ({current_lobby_size}<{Lobbies[lobby_number].lobby_threshold}), displaying lobby information')
+        embed = discord.Embed(title=f'{Lobbies[lobby_number].lobby_message_title}',
                               description='Join using buttons below, server info will be sent via DM when the lobby is full. '
-                                          'Currently ' + str(current_lobby_size) + '/' + str(LobbyThreshold) + ' players',
-                              color=int(LobbyMessageColor, 16))
-        embed.add_field(name=TeamNames[0], value=sapp_players_string, inline=True)
-        embed.add_field(name=TeamNames[1], value=ambr_players_string, inline=True)
+                                          'Currently ' + str(current_lobby_size) + '/' + str(Lobbies[lobby_number].lobby_threshold) + ' players',
+                              color=int(Lobbies[lobby_number].lobby_message_color, 16))
+        embed.add_field(name=Lobbies[lobby_number].team_names[0], value=sapp_players_string, inline=True)
+        embed.add_field(name=Lobbies[lobby_number].team_names[1], value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
         embed.add_field(name='EITHER', value=fill_players_string, inline=False)
         embed.timestamp = datetime.datetime.now()
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
         await lobby_message.edit(embed=embed, view=LobbyButtons(timeout=None))
-    elif current_lobby_size >= int(LobbyThreshold) and Lobbies[lobby_number].active:
+    elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active:
         print(f'lobby{lobby_number}: Lobby activated, displaying final player list')
         embed = discord.Embed(title=f'Lobby is starting!',
                               description='Check your DMs for connect info',
                               color=int(ActiveMessageColor, 16))
-        embed.add_field(name=TeamNames[0], value=sapp_players_string, inline=True)
-        embed.add_field(name=TeamNames[1], value=ambr_players_string, inline=True)
+        embed.add_field(name=Lobbies[lobby_number].team_names[0], value=sapp_players_string, inline=True)
+        embed.add_field(name=Lobbies[lobby_number].team_names[1], value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
         embed.timestamp = datetime.datetime.now()
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
@@ -323,14 +389,12 @@ async def update_message(lobby_number):
         await lobby_message.edit(embed=embed, view=None)
 
     else:
-        print(f'lobby{lobby_number}: Lobby threshold met! ({current_lobby_size}>={LobbyThreshold})')
+        print(f'lobby{lobby_number}: Lobby threshold met! ({current_lobby_size}>={Lobbies[lobby_number].lobby_threshold})')
         await activate_lobby(lobby_number)
     return
 
 
-# runs when lobby threshold is met
 async def activate_lobby(lobby_number):
-    # check if the lobby has previously been launched (to prevent multiple notifications)
     if not Lobbies[lobby_number].active:
         Lobbies[lobby_number].active = 1
         await assign_teams(lobby_number)
@@ -374,7 +438,7 @@ async def assign_teams(lobby_number):
     print(f'lobby{lobby_number}: Assigning fill players to teams')
     random.shuffle(Lobbies[lobby_number].fill_players)
     for player in Lobbies[lobby_number].fill_players:
-        if len(Lobbies[lobby_number].sapp_players) < int(LobbyThreshold)/2:
+        if len(Lobbies[lobby_number].sapp_players) < int(Lobbies[lobby_number].lobby_threshold)/2:
             Lobbies[lobby_number].sapp_players.append(player)
         else:
             Lobbies[lobby_number].ambr_players.append(player)
@@ -386,10 +450,10 @@ async def send_lobby_info(lobby_number):
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
     for player in Lobbies[lobby_number].sapp_players:
         await player.send(
-            f"Please join {TeamNames[0]} \n {connect_string} \n Password: {Lobbies[lobby_number].password}")
+            f"Please join {Lobbies[lobby_number].team_names[0]} \n {connect_string} \n Password: {Lobbies[lobby_number].password}")
     for player in Lobbies[lobby_number].ambr_players:
         await player.send(
-            f"Please join {TeamNames[1]} \n {connect_string} \n Password: {Lobbies[lobby_number].password}")
+            f"Please join {Lobbies[lobby_number].team_names[1]} \n {connect_string} \n Password: {Lobbies[lobby_number].password}")
 
 
 async def update_all_lobby_messages():
@@ -448,7 +512,7 @@ class LobbyButtons(discord.ui.View):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
         if interactor in Lobbies[lobby_number].ambr_players:
-            await interaction.response.send_message(f"You are already on {TeamNames[1]}", ephemeral=True)
+            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].team_names[1]}", ephemeral=True)
             return
         if interactor in Lobbies[lobby_number].fill_players:
             await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
@@ -462,16 +526,16 @@ class LobbyButtons(discord.ui.View):
                 del Lobbies[lobby_number].sapp_players[i]
             i += 1
         if interactor_already_here:
-            await interaction.response.send_message(f"Removed from {TeamNames[0]}", ephemeral=True)
+            await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].team_names[0]}", ephemeral=True)
             await update_message(lobby_number)
             return
 
-        if len(Lobbies[lobby_number].sapp_players) == int(LobbyThreshold)/2:
-            await interaction.response.send_message(f"{TeamNames[0]} is full, please join a different team", ephemeral=True)
+        if len(Lobbies[lobby_number].sapp_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
+            await interaction.response.send_message(f"{Lobbies[lobby_number].team_names[0]} is full, please join a different team", ephemeral=True)
             return
         elif interactor not in Lobbies[lobby_number].sapp_players:
             Lobbies[lobby_number].sapp_players.append(interactor)
-            await interaction.response.send_message(f"Added to {TeamNames[0]}", ephemeral=True)
+            await interaction.response.send_message(f"Added to {Lobbies[lobby_number].team_names[0]}", ephemeral=True)
             await update_message(lobby_number)
 
     @discord.ui.button(label="Amber", style=discord.ButtonStyle.red)
@@ -479,7 +543,7 @@ class LobbyButtons(discord.ui.View):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
         if interactor in Lobbies[lobby_number].sapp_players:
-            await interaction.response.send_message(f"You are already on {TeamNames[0]}", ephemeral=True)
+            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].team_names[0]}", ephemeral=True)
             return
         if interactor in Lobbies[lobby_number].fill_players:
             await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
@@ -493,16 +557,16 @@ class LobbyButtons(discord.ui.View):
                 del Lobbies[lobby_number].ambr_players[i]
             i += 1
         if interactor_already_here:
-            await interaction.response.send_message(f"Removed from {TeamNames[1]}", ephemeral=True)
+            await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].team_names[1]}", ephemeral=True)
             await update_message(lobby_number)
             return
 
-        if len(Lobbies[lobby_number].ambr_players) == int(LobbyThreshold)/2:
-            await interaction.response.send_message(f"{TeamNames[1]} is full, please join a different team", ephemeral=True)
+        if len(Lobbies[lobby_number].ambr_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
+            await interaction.response.send_message(f"{Lobbies[lobby_number].team_names[1]} is full, please join a different team", ephemeral=True)
             return
         if interactor not in Lobbies[lobby_number].ambr_players:
             Lobbies[lobby_number].ambr_players.append(interactor)
-            await interaction.response.send_message(f"Added to {TeamNames[1]}", ephemeral=True)
+            await interaction.response.send_message(f"Added to {Lobbies[lobby_number].team_names[1]}", ephemeral=True)
             await update_message(lobby_number)
         else:
             i = 0
@@ -510,7 +574,7 @@ class LobbyButtons(discord.ui.View):
                 if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
                     del Lobbies[lobby_number].ambr_players[i]
                 i += 1
-            await interaction.response.send_message(f"Removed from {TeamNames[1]}", ephemeral=True)
+            await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].team_names[1]}", ephemeral=True)
             await update_message(lobby_number)
 
     @discord.ui.button(label="Either", style=discord.ButtonStyle.green)
@@ -518,10 +582,10 @@ class LobbyButtons(discord.ui.View):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
         if interactor in Lobbies[lobby_number].sapp_players:
-            await interaction.response.send_message(f"You are already on {TeamNames[0]}", ephemeral=True)
+            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].team_names[0]}", ephemeral=True)
             return
         if interactor in Lobbies[lobby_number].ambr_players:
-            await interaction.response.send_message(f"You are already on {TeamNames[1]}", ephemeral=True)
+            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].team_names[1]}", ephemeral=True)
             return
         if interactor not in Lobbies[lobby_number].fill_players:
             Lobbies[lobby_number].fill_players.append(interactor)

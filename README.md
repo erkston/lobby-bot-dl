@@ -3,13 +3,19 @@ Discord bot designed to place users into a "lobby" that directs players to a ser
 Users join by clicking a button in discord.
 The bot will then split the lobby members into two teams, and send team assignments and connect info via DM.
 
-![Example lobby](https://i.imgur.com/irE9DGl.png)
+![ExampleLobby1](https://i.imgur.com/0UdUNIs.png) ![ExampleLobby2](https://i.imgur.com/VuqXvMy.png)
+
+The bot also supports multiple configs that act as templates to easily create lobbies for different regions, games, team sizes, etc.
+All options listed in the NA and EU json.example configs can be used. These settings will override the defaults in config.json when a lobby is created.
 
 ### Usage
 
-Start a lobby using /startlobby SERVER PASSWORD
+Start a lobby using /startlobby SERVER:PORT PASSWORD CONFIG
 
-![startlobby command](https://i.imgur.com/t24JErN.png)
+![startlobby command](https://i.imgur.com/q2bNbcA.png)
+
+The Config field is case sensitive, the command discription will tell you what configs are available.
+If no additional configs are added other than config.json, default will be the only available selection.
 
 The bot will also send an admin panel to whoever issues the command to start the lobby:
 
@@ -22,11 +28,17 @@ The bot will also send an admin panel to whoever issues the command to start the
 
 
 ### Discord set-up
-The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires the "Members" Privileged Gateway Intent, and permission to mention roles.
-The server should have a dedicated channel and role as well (see config below)
+The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires permission to mention roles (and ability to mention those roles in server settings).
+The server should have a dedicated channel (see config below)
 
 ### Configuration
-Copy config/config_example.json to config/config.json and edit accordingly.
+Copy config/config_example.json to config/config.json and edit accordingly. 
+
+config.json (along with any changes made via /lbset command) is the 'default' config that is selected in the /startlobby command.
+Any additional configs added (NA.json, EU.json, etc) are independent and do not affect the default config.
+These templates are loaded at /startlobby command execution, so it's possible to edit the configs while the bot is still running.
+
+Settings:
 - DiscordBotToken - Your bots token from the Discord Developer Portal
 - BotTimezone - Timezone used for timestamps in console output. Will use this timezone instead of system time
 - BotGame* - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
@@ -43,7 +55,8 @@ Copy config/config_example.json to config/config.json and edit accordingly.
 
 ### Slash Command Configuration (/lbset)
 Any option listed with an asterisk(*) above can be modified on the fly by using "/lbset SETTING VALUE". Tab completion also works for those settings that are settable using the command.
-Changing settings via the command has the benifit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. Any changes made using the command are also temporary until the next restart. Permanent changes must be made in the config file.
+Changing settings via the command has the benifit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. 
+Any changes made using the command are also temporary until the next restart. Permanent changes must be made in the config file.
 
 Examples:
 - /lbset LobbyThreshold 14

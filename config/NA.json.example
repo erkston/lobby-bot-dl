@@ -1,0 +1,15 @@
+{
+    "LobbyRole": "NA-pug",
+    "LobbyRolePing": "True",
+    "LobbyAutoLaunch": "True",
+    "LobbyAutoReset": "True",
+    "LobbyMessageTitle": "\uD83C\uDDFA\uD83C\uDDF8 NA Playtest \uD83C\uDDFA\uD83C\uDDF8",
+    "LobbyMessageColor": "B31942",
+    "ActiveMessageColor": "0A3161",
+    "LobbyThreshold": "4",
+    "LobbyCooldown": "15m",
+    "TeamNames":[
+      "GEORGE WASHINGTON",
+      "ABE LINCOLN"
+    ]
+}
