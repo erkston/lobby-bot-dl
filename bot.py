@@ -40,7 +40,8 @@ presets_string = ""
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
 lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
-                    "LobbyThreshold", "LobbyCooldown", "GetCfg"]
+                    "LobbyThreshold", "LobbyCooldown"]
+lbcomCommandList = ["GetCfg", "ReloadPresets"]
 
 
 def load_presets():
@@ -86,10 +87,10 @@ intents = discord.Intents.default()
 bot = Bot(intents=intents)
 
 
-@bot.command(name="lbset", description="Change setting values or get config readout")
-async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_autocomplete(lbsetCommandList)), value):
+@bot.command(name="lbset", description="Change default setting values")
+async def lbset(ctx, setting: discord.Option(description="Setting name", autocomplete=discord.utils.basic_autocomplete(lbsetCommandList)), value: discord.Option(description="New setting value")):
     if bot_admin_role in ctx.author.roles:
-        print(f'Received command from {ctx.author.display_name}, executing command...')
+        print(f'Received lbset command from {ctx.author.display_name}, executing command...')
         global LobbyCooldown
         global LobbyCooldownSeconds
         if setting.casefold() == "botgame":
@@ -152,7 +153,20 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
             await ctx.respond(f'LobbyCooldown has been set to {LobbyCooldown}', ephemeral=True)
             print(f'LobbyCooldown changed to {LobbyCooldown} ({LobbyCooldownSeconds}s) by {ctx.author.display_name}')
 
-        elif setting.casefold() == "getcfg":
+        else:
+            await ctx.respond("I don't have that setting, please try again", ephemeral=True)
+            print(f'Received command from {ctx.author.display_name} but I did not understand it :(')
+    else:
+        await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
+        print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
+
+
+@bot.command(name="lbcom", description="Send command")
+async def lbcom(ctx, command: discord.Option(description="Command to execute", autocomplete=discord.utils.basic_autocomplete(lbcomCommandList))):
+    if bot_admin_role in ctx.author.roles:
+        global presets_string
+        print(f'Received lbcom command from {ctx.author.display_name}, executing command...')
+        if command.casefold() == "getcfg":
             await ctx.author.send(f'Current default configuration:\n'
                                   f'Version: {version}\n'
                                   f'BotTimezone: {BotTimezone}\n'
@@ -169,13 +183,16 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
                                   f'LobbyThreshold: {LobbyThreshold}\n'
                                   f'LobbyCooldown: {LobbyCooldown}\n'
                                   f'TeamNames: {TeamNames}\n'
-                                  f'Some settings hidden, please edit config file')
+                                  f'Some settings hidden, please edit config file\n'
+                                  f'Available presets: {presets_string}')
             await ctx.respond('Check your DMs', ephemeral=True)
-            print(f'Sent config readout to {ctx.author.display_name}')
+            print(f'Sent default config readout to {ctx.author.display_name}')
 
-        else:
-            await ctx.respond("I don't have that setting, please try again", ephemeral=True)
-            print(f'Received command from {ctx.author.display_name} but I did not understand it :(')
+        elif command.casefold() == "reloadpresets":
+            load_presets()
+            await ctx.respond(f'Presets reloaded. Available: {presets_string}', ephemeral=True)
+            print(f'{ctx.author.display_name} reloaded presets. Available: {presets_string}')
+
     else:
         await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
         print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
@@ -253,7 +270,7 @@ async def on_ready():
     systemtime = datetime.datetime.now()
     bottime = datetime.datetime.now(ZoneInfo(BotTimezone))
     print(f'System Time: {systemtime.strftime("%Y-%m-%d %H:%M:%S")} Bot Time: {bottime.strftime("%Y-%m-%d %H:%M:%S")} (Timezone: {BotTimezone})')
-    print(f'Available presets: {Presets}')
+    print(f'Available presets: {presets_string}')
     print('Default config options:')
     print(f'BotGame: {BotGame}')
     print(f'BotAdminRole: {BotAdminRole}')

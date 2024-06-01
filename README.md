@@ -10,9 +10,9 @@ The config/presets/ folder has example configs showing which settings are templa
 
 ### Usage
 
-Start a lobby using /startlobby SERVER:PORT PASSWORD PRESET
+Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET```
 
-![startlobby command](https://i.imgur.com/q2bNbcA.png)
+![startlobby command](https://i.imgur.com/FFCDylQ.png)
 
 The Preset field is case sensitive, the command discription will tell you what presets are available.
 If no presets are added to the /config/presets/ folder, default will be the only available selection.
@@ -56,23 +56,28 @@ Settings:
 - TeamNames - The two team names the bot will split lobby members into
 
 ### Slash Command Configuration (/lbset)
-Any option listed with an asterisk(*) above can be modified on the fly by using "/lbset SETTING VALUE". Tab completion also works for those settings that are settable using the command.
-Changing settings via the command has the benifit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. 
+Any option listed with an asterisk(*) above can be modified on the fly by using ```/lbset SETTING VALUE```. Tab completion also works for those settings that are settable using the command.
+Changing settings via the command has the benefit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. 
 Any changes made using the command are also temporary until the next restart. Permanent changes must be made in the config file.
 
 These setting changes will only affect the default config and not any other presets (config/presets/NA.json, config/presets/EU.json, etc)
 
 Examples:
-- /lbset LobbyThreshold 14
-- /lbset LobbyCooldown 2h
-- /lbset LobbyMessageTitle Cool Guys
+- ```/lbset LobbyThreshold 14```
+- ```/lbset LobbyCooldown 2h```
+- ```/lbset LobbyMessageTitle Cool Guys```
 
 Setting names are not case-sensitive, however the setting values need to follow the same format as in the config or things will start breaking.
 Cooldown needs to have units (s, m, or h), colors are in hex, thresholds are integers, and Enable options are true/false.
 
 Depending on the current state of the lobby and which setting you are changing it may update the lobby message immediately, or it may not be visible other than the bot's reply to your command.
 
-/lbset getcfg ANYVALUE will send you a DM with most of the current configuration settings (BotAdminRole still required)
+### Other Commands (/lbcom)
+
+- ```/lbcom ReloadPresets```
+  - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
+- ```/lbcom getcfg```
+  -  Sends you a DM with most of the current default configuration settings
 
 ### Docker Images
 See [Dockerhub](https://hub.docker.com/r/erkston/lobby-bot-dl)
