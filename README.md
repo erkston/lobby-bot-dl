@@ -5,17 +5,17 @@ The bot will then split the lobby members into two teams, and send team assignme
 
 ![ExampleLobby1](https://i.imgur.com/0UdUNIs.png) ![ExampleLobby2](https://i.imgur.com/VuqXvMy.png)
 
-The bot also supports multiple configs that act as templates to easily create lobbies for different regions, games, team sizes, etc.
-All options listed in the NA and EU json.example configs can be used. These settings will override the defaults in config.json when a lobby is created.
+The bot also supports presets that act as templates to easily create lobbies for different regions, games, team sizes, etc.
+The config/presets/ folder has example configs showing which settings are templatable. These settings will override the defaults in config.json when a lobby is created.
 
 ### Usage
 
-Start a lobby using /startlobby SERVER:PORT PASSWORD CONFIG
+Start a lobby using /startlobby SERVER:PORT PASSWORD PRESET
 
 ![startlobby command](https://i.imgur.com/q2bNbcA.png)
 
-The Config field is case sensitive, the command discription will tell you what configs are available.
-If no additional configs are added other than config.json, default will be the only available selection.
+The Preset field is case sensitive, the command discription will tell you what presets are available.
+If no presets are added to the /config/presets/ folder, default will be the only available selection.
 
 The bot will also send an admin panel to whoever issues the command to start the lobby:
 
@@ -28,7 +28,6 @@ The bot will also send an admin panel to whoever issues the command to start the
 - Resend Connect Info - resend server address and password to lobby members via DM. Only works after the lobby has launched
 - DM Players - opens a modal to send any text to all current lobby players via DM
 
-
 ### Discord set-up
 The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires permission to mention roles (and ability to mention those roles in server settings).
 The server should have a dedicated channel (see config below)
@@ -36,8 +35,8 @@ The server should have a dedicated channel (see config below)
 ### Configuration
 Copy config/config_example.json to config/config.json and edit accordingly. 
 
-config.json (along with any changes made via /lbset command) is the 'default' config that is selected in the /startlobby command.
-Any additional configs added (NA.json, EU.json, etc) are independent and do not affect the default config.
+config.json (along with any changes made via /lbset command) is the 'default' preset that is selected in the /startlobby command.
+Any additional presets added (config/presets/NA.json, config/presets/EU.json, etc) are independent and do not affect the default config.
 These templates are loaded at /startlobby command execution, so it's possible to edit the configs while the bot is still running.
 
 Settings:
@@ -61,7 +60,7 @@ Any option listed with an asterisk(*) above can be modified on the fly by using 
 Changing settings via the command has the benifit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. 
 Any changes made using the command are also temporary until the next restart. Permanent changes must be made in the config file.
 
-These setting changes will only affect the default config and not any additional templates (NA.json, EU.json, etc.)
+These setting changes will only affect the default config and not any other presets (config/presets/NA.json, config/presets/EU.json, etc)
 
 Examples:
 - /lbset LobbyThreshold 14

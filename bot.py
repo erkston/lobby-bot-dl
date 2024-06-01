@@ -11,6 +11,7 @@ import json
 import re
 import os
 from datetime import timedelta
+import classes
 
 with open("config/config.json", "r") as jsonfile:
     config = json.load(jsonfile)
@@ -34,25 +35,27 @@ version = "v0.0.5"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
-Configs = []
+Presets = []
+presets_string = ""
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
 lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
                     "LobbyThreshold", "LobbyCooldown", "GetCfg"]
 
-for file in os.listdir("config/"):
-    if file.endswith(".json"):
-        if os.path.splitext(file)[0] == "config":
-            Configs.append("default")
-        else:
-            Configs.append(os.path.splitext(file)[0])
+
+def load_presets():
+    global Presets, presets_string
+    Presets = ["default"]
+    presets_string = ""
+    for file in os.listdir("config/presets/"):
+        if file.endswith(".json"):
+            Presets.append(os.path.splitext(file)[0])
+        presets_string = ", ".join(Presets)
+    print(f'Presets found: {presets_string}')
+    return
 
 
-def convert_to_seconds(s):
-    return int(timedelta(**{
-        Units.get(m.group('unit').lower(), 'seconds'): float(m.group('val'))
-        for m in re.finditer(r'(?P<val>\d+(\.\d+)?)(?P<unit>[smhdw]?)', s, flags=re.I)
-    }).total_seconds())
+load_presets()
 
 
 class Bot(discord.Bot):
@@ -81,33 +84,6 @@ class Bot(discord.Bot):
 
 intents = discord.Intents.default()
 bot = Bot(intents=intents)
-
-
-class Lobby:
-    def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, sapp_players, ambr_players, fill_players,
-                 active, lobby_role, lobby_role_ping, lobby_auto_launch, lobby_auto_reset, lobby_message_title, lobby_message_color,
-                 active_message_color, lobby_threshold, lobby_cooldown, team_names, manual_mode):
-        self.number = lobby_number
-        self.message_id = message_id
-        self.host = host
-        self.admin_msg_id = admin_msg_id
-        self.server = server
-        self.password = password
-        self.sapp_players = sapp_players
-        self.ambr_players = ambr_players
-        self.fill_players = fill_players
-        self.active = active
-        self.lobby_role = lobby_role
-        self.lobby_role_ping = lobby_role_ping
-        self.lobby_auto_launch = lobby_auto_launch
-        self.lobby_auto_reset = lobby_auto_reset
-        self.lobby_message_title = lobby_message_title
-        self.lobby_message_color = lobby_message_color
-        self.active_message_color = active_message_color
-        self.lobby_threshold = lobby_threshold
-        self.lobby_cooldown = lobby_cooldown
-        self.team_names = team_names
-        self.manual_mode = manual_mode
 
 
 @bot.command(name="lbset", description="Change setting values or get config readout")
@@ -208,23 +184,23 @@ async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_au
 @bot.command(name="startlobby", description="Start a lobby")
 async def startlobby(ctx, server: discord.Option(str, description="Enter the servers address and port (address:port) "),
                      password: discord.Option(str, description="Enter the servers password"),
-                     config: discord.Option(str, description=f"Available configs: {Configs} (Case sensitive)")):
+                     preset: discord.Option(str, description=f"Available presets: {presets_string} (Case sensitive)")):
     if bot_admin_role in ctx.author.roles:
         global lobby_role, LobbyRolePing, LobbyAutoLaunch
-        selected_config = config
-        if selected_config in Configs:
-            print(f"startlobby: Found Selected config: {selected_config}")
+        selected_preset = preset
+        if selected_preset in Presets:
+            print(f"startlobby: Found Selected preset: {selected_preset}")
         else:
-            print(f"startlobby: Could not find selected config: {selected_config}, aborting command")
-            await ctx.respond("Could not find that config, please try again", ephemeral=True)
+            print(f"startlobby: Could not find selected preset: {selected_preset}, aborting command")
+            await ctx.respond("Could not find that preset, please try again", ephemeral=True)
             return
         global LobbyCount, Lobbies
         LobbyCount += 1
         lobby_number = LobbyCount
         print(f'lobby{lobby_number}: Received lobby request from {ctx.author.display_name}, starting Lobby #{lobby_number}')
 
-        if selected_config != "default":
-            with open(f"config/{selected_config}.json", "r") as jsonfile:
+        if selected_preset != "default":
+            with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
                 tempconfig = json.load(jsonfile)
                 TempLobbyRole = tempconfig['LobbyRole']
                 for guild in bot.guilds:
@@ -243,24 +219,23 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         if distutils.util.strtobool(lobby_auto_launch):
             embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby will launch automatically when full')
         else:
-            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='After it fills, lobby will wait to launch until you press the green button')
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='After it fills, lobby will wait until you press the green button to launch')
         embed.add_field(name='Server', value=server, inline=True)
         embed.add_field(name='Password', value=password, inline=True)
-        embed.add_field(name='Config', value=config, inline=True)
+        embed.add_field(name='Preset', value=preset, inline=True)
         admin_panel_msg = await ctx.author.send(embed=embed, view=AdminButtons(timeout=None))
 
-        if selected_config != "default":
-            with open(f"config/{selected_config}.json", "r") as jsonfile:
+        if selected_preset != "default":
+            with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
                 tempconfig = json.load(jsonfile)
-
-                Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
+                Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
                     [], [], 0, temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                     tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                     tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'], tempconfig['TeamNames'], 0))
-                print(f'lobby{lobby_number}: Lobby created with config {selected_config}')
+                print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames
-            Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
+            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
                 [], [], 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
                 LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames, 0))
             print(f'lobby{lobby_number}: Lobby created with default config')
@@ -278,7 +253,7 @@ async def on_ready():
     systemtime = datetime.datetime.now()
     bottime = datetime.datetime.now(ZoneInfo(BotTimezone))
     print(f'System Time: {systemtime.strftime("%Y-%m-%d %H:%M:%S")} Bot Time: {bottime.strftime("%Y-%m-%d %H:%M:%S")} (Timezone: {BotTimezone})')
-    print(f'Available Configs: {Configs}')
+    print(f'Available presets: {Presets}')
     print('Default config options:')
     print(f'BotGame: {BotGame}')
     print(f'BotAdminRole: {BotAdminRole}')
@@ -324,7 +299,7 @@ async def on_ready():
             print(f'Found old message from {bot.user}, deleting it')
             await message.delete()
     print('------------------------------------------------------')
-    Lobbies.append(Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
+    Lobbies.append(classes.Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
                          [], [], [], 0, "role", "True",
                          "True", "True", "Title", "FFFFFF",
                          "FFFFFF", 0, 0, 0, 0))
@@ -527,6 +502,13 @@ async def is_message_deleted(channel, message_id):
         return False
     except discord.errors.NotFound:
         return True
+
+
+async def convert_to_seconds(s):
+    return int(timedelta(**{
+        Units.get(m.group('unit').lower(), 'seconds'): float(m.group('val'))
+        for m in re.finditer(r'(?P<val>\d+(\.\d+)?)(?P<unit>[smhdw]?)', s, flags=re.I)
+    }).total_seconds())
 
 
 class DMmodal(discord.ui.Modal):
