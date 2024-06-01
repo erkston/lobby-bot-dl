@@ -30,7 +30,7 @@ LobbyThreshold = config['LobbyThreshold']
 LobbyCooldown = config['LobbyCooldown']
 TeamNames = config['TeamNames']
 
-version = "v0.0.4"
+version = "v0.0.5"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
