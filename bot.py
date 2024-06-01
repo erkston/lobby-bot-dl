@@ -233,30 +233,26 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             lobby_auto_launch = LobbyAutoLaunch
 
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
-        if distutils.util.strtobool(lobby_auto_launch):
-            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby will launch automatically when full')
-        else:
-            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='After it fills, lobby will wait until you press the green button to launch')
-        embed.add_field(name='Server', value=server, inline=True)
-        embed.add_field(name='Password', value=password, inline=True)
-        embed.add_field(name='Preset', value=preset, inline=True)
-        admin_panel_msg = await ctx.author.send(embed=embed, view=AdminButtons(timeout=None))
+
+        embed = discord.Embed(title=f"Starting Lobby {lobby_number} Admin Panel...")
+        admin_panel_msg = await ctx.author.send(embed=embed, view=None)
 
         if selected_preset != "default":
             with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
                 tempconfig = json.load(jsonfile)
-                Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
+                Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset,[],
                     [], [], 0, temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                     tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                     tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'], tempconfig['TeamNames'], 0))
                 print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames
-            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
+            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
                 [], [], 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
                 LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames, 0))
             print(f'lobby{lobby_number}: Lobby created with default config')
         await update_message(lobby_number)
+        await update_admin_panel(lobby_number)
 
     else:
         await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
@@ -317,7 +313,7 @@ async def on_ready():
             await message.delete()
     print('------------------------------------------------------')
     Lobbies.append(classes.Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
-                         [], [], [], 0, "role", "True",
+                         "preset", [], [], [], 0, "role", "True",
                          "True", "True", "Title", "FFFFFF",
                          "FFFFFF", 0, 0, 0, 0))
     print('Startup complete, awaiting command')
@@ -334,6 +330,28 @@ async def initialize_lobby(lobby_number, temp_lobby_role, lobby_role_ping):
                               activity=discord.Activity(type=discord.ActivityType.listening,
                                                         name=f"#{lobby_channel}"))
     return lobby_message
+
+
+async def update_admin_panel(lobby_number):
+    if not await is_message_deleted(Lobbies[lobby_number].host.dm_channel, Lobbies[lobby_number].admin_msg_id):
+        admin_panel_msg = await Lobbies[lobby_number].host.dm_channel.fetch_message(Lobbies[lobby_number].admin_msg_id)
+    else:
+        print(f'lobby{lobby_number}: Admin panel message not found')
+        return
+    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
+                              description='Lobby will launch automatically when full')
+    else:
+        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",
+                              description='After it fills, lobby will wait until you press the green button to launch')
+
+    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nLobbyThreshold\nLobbyCooldown"
+    value_string = f"{Lobbies[lobby_number].server}\n{Lobbies[lobby_number].password}\n{Lobbies[lobby_number].preset}\n{Lobbies[lobby_number].lobby_auto_launch}\n{Lobbies[lobby_number].lobby_auto_reset}\n{Lobbies[lobby_number].lobby_message_title}\n{Lobbies[lobby_number].lobby_threshold}\n{Lobbies[lobby_number].lobby_cooldown}\n"
+
+    embed.add_field(name='Setting', value=setting_string, inline=True)
+    embed.add_field(name='Value', value=value_string, inline=True)
+    await admin_panel_msg.edit(embed=embed, view=AdminButtons(timeout=None))
+    return
 
 
 async def update_message(lobby_number):

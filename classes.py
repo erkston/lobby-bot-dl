@@ -1,5 +1,5 @@
 class Lobby:
-    def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, sapp_players, ambr_players, fill_players,
+    def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, preset, sapp_players, ambr_players, fill_players,
                  active, lobby_role, lobby_role_ping, lobby_auto_launch, lobby_auto_reset, lobby_message_title, lobby_message_color,
                  active_message_color, lobby_threshold, lobby_cooldown, team_names, manual_mode):
         self.number = lobby_number
@@ -8,6 +8,7 @@ class Lobby:
         self.admin_msg_id = admin_msg_id
         self.server = server
         self.password = password
+        self.preset = preset
         self.sapp_players = sapp_players
         self.ambr_players = ambr_players
         self.fill_players = fill_players
