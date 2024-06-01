@@ -19,10 +19,12 @@ If no additional configs are added other than config.json, default will be the o
 
 The bot will also send an admin panel to whoever issues the command to start the lobby:
 
-![Admin Panel](https://i.imgur.com/tFmk2Wf.png)
+![Admin Panel](https://i.imgur.com/urofBgA.png)
 
+- Launch Lobby - Launches the lobby when LobbyAutoLaunch is False. If LobbyAutoLaunch is True this button does nothing
 - Reset Lobby - removes all players but keeps the lobby open
 - Close Lobby - closes the lobby completely
+- Shuffle Teams - Randomizes teams, if there are any fill players it will move them to a team
 - Resend Connect Info - resend server address and password to lobby members via DM. Only works after the lobby has launched
 - DM Players - opens a modal to send any text to all current lobby players via DM
 
@@ -58,6 +60,8 @@ Settings:
 Any option listed with an asterisk(*) above can be modified on the fly by using "/lbset SETTING VALUE". Tab completion also works for those settings that are settable using the command.
 Changing settings via the command has the benifit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. 
 Any changes made using the command are also temporary until the next restart. Permanent changes must be made in the config file.
+
+These setting changes will only affect the default config and not any additional templates (NA.json, EU.json, etc.)
 
 Examples:
 - /lbset LobbyThreshold 14

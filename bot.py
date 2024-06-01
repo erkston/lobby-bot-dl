@@ -110,7 +110,6 @@ class Lobby:
         self.manual_mode = manual_mode
 
 
-
 @bot.command(name="lbset", description="Change setting values or get config readout")
 async def lbset(ctx, setting: discord.Option(autocomplete=discord.utils.basic_autocomplete(lbsetCommandList)), value):
     if bot_admin_role in ctx.author.roles:
@@ -211,7 +210,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                      password: discord.Option(str, description="Enter the servers password"),
                      config: discord.Option(str, description=f"Available configs: {Configs} (Case sensitive)")):
     if bot_admin_role in ctx.author.roles:
-        global lobby_role, LobbyRolePing
+        global lobby_role, LobbyRolePing, LobbyAutoLaunch
         selected_config = config
         if selected_config in Configs:
             print(f"startlobby: Found Selected config: {selected_config}")
@@ -234,12 +233,20 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                             temp_lobby_role = role
                             print(f'lobby{lobby_number}: Lobby Role found: "{temp_lobby_role.name}" (ID: {temp_lobby_role.id})')
                 lobby_role_ping = tempconfig['LobbyRolePing']
+                lobby_auto_launch = tempconfig['LobbyAutoLaunch']
                 lobby_message = await initialize_lobby(lobby_number, temp_lobby_role, distutils.util.strtobool(lobby_role_ping))
         else:
             lobby_message = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(LobbyRolePing))
+            lobby_auto_launch = LobbyAutoLaunch
 
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
-        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel")
+        if distutils.util.strtobool(lobby_auto_launch):
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby will launch automatically when full')
+        else:
+            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='After it fills, lobby will wait to launch until you press the green button')
+        embed.add_field(name='Server', value=server, inline=True)
+        embed.add_field(name='Password', value=password, inline=True)
+        embed.add_field(name='Config', value=config, inline=True)
         admin_panel_msg = await ctx.author.send(embed=embed, view=AdminButtons(timeout=None))
 
         if selected_config != "default":
@@ -252,7 +259,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                     tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'], tempconfig['TeamNames'], 0))
                 print(f'lobby{lobby_number}: Lobby created with config {selected_config}')
         else:
-            global LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames
+            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames
             Lobbies.append(Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, [],
                 [], [], 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset,
                 LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, TeamNames, 0))
@@ -375,9 +382,10 @@ async def update_message(lobby_number):
         await lobby_message.edit(embed=embed, view=LobbyButtons(timeout=None))
     elif current_lobby_size == int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active:
         print(f'lobby{lobby_number}: Lobby activated, displaying final player list')
-        embed = discord.Embed(title=f'Lobby is starting!',
-                              description='Check your DMs for connect info',
-                              color=int(ActiveMessageColor, 16))
+        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+            embed = discord.Embed(title=f'Lobby is starting!', description='Check your DMs for connect info', color=int(ActiveMessageColor, 16))
+        else:
+            embed = discord.Embed(title=f'Lobby is starting!', description='Waiting for host to launch...', color=int(ActiveMessageColor, 16))
         embed.add_field(name=Lobbies[lobby_number].team_names[0], value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].team_names[1], value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
@@ -452,6 +460,29 @@ async def assign_teams(lobby_number):
         else:
             Lobbies[lobby_number].ambr_players.append(player)
     Lobbies[lobby_number].fill_players.clear()
+
+
+async def shuffle_teams(lobby_number):
+    print(f'lobby{lobby_number}: Shuffling teams')
+    player_list = []
+    for player in Lobbies[lobby_number].sapp_players:
+        player_list.append(player)
+    for player in Lobbies[lobby_number].ambr_players:
+        player_list.append(player)
+    for player in Lobbies[lobby_number].fill_players:
+        player_list.append(player)
+    Lobbies[lobby_number].sapp_players.clear()
+    Lobbies[lobby_number].ambr_players.clear()
+    Lobbies[lobby_number].fill_players.clear()
+    random.shuffle(player_list)
+    i = 0
+    while i < len(player_list)/2:
+        Lobbies[lobby_number].sapp_players.append(player_list[i])
+        i += 1
+    while i < len(player_list):
+        Lobbies[lobby_number].ambr_players.append(player_list[i])
+        i += 1
+    await update_message(lobby_number)
 
 
 async def send_lobby_info(lobby_number):
@@ -636,6 +667,13 @@ class AdminButtons(discord.ui.View):
         await close_lobby(lobby_number)
         await interaction.response.send_message(f"Lobby {lobby_number} closed", ephemeral=True)
 
+    @discord.ui.button(label="Shuffle Teams", style=discord.ButtonStyle.secondary, row=2)
+    async def shuffle_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        print(f'lobby{lobby_number}: Received shuffle command from {interaction.user.display_name}')
+        await shuffle_teams(lobby_number)
+        await interaction.response.send_message(f"Teams have been shuffled", ephemeral=True)
+
     @discord.ui.button(label="Resend connect info", style=discord.ButtonStyle.secondary, row=2)
     async def resend_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
@@ -644,7 +682,7 @@ class AdminButtons(discord.ui.View):
             await send_lobby_info(lobby_number)
             await interaction.response.send_message(f"Connect info resent", ephemeral=True)
         else:
-            await interaction.response.send_message(f"Lobby is not active yet, sent nothing", ephemeral=True)
+            await interaction.response.send_message(f"Lobby is not active, sent nothing", ephemeral=True)
 
     @discord.ui.button(label="DM Players", style=discord.ButtonStyle.secondary, row=2)
     async def dm_button_callback(self, button, interaction):
