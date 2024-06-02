@@ -210,30 +210,7 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
         global presets_string
         print(f'Received lbcom command from {ctx.author.display_name}, executing command...')
         if command.casefold() == "getcfg":
-            await ctx.author.send(f'Current default configuration:\n'
-                                  f'Version: {version}\n'
-                                  f'BotTimezone: {BotTimezone}\n'
-                                  f'BotGame: {BotGame}\n'
-                                  f'BotAdminRole : {BotAdminRole}\n'
-                                  f'LobbyChannelName: {LobbyChannelName}\n'
-                                  f'LobbyRole: {LobbyRole}\n'
-                                  f'LobbyRolePing: {LobbyRolePing}\n'
-                                  f'LobbyAutoLaunch: {LobbyAutoLaunch}\n'
-                                  f'LobbyAutoReset: {LobbyAutoReset}\n'
-                                  f'LobbyMessageTitle: {LobbyMessageTitle}\n'
-                                  f'LobbyMessageColor: {LobbyMessageColor}\n'
-                                  f'ActiveMessageColor: {ActiveMessageColor}\n'
-                                  f'LobbyThreshold: {LobbyThreshold}\n'
-                                  f'LobbyCooldown: {LobbyCooldown}\n'
-                                  f'SapphireTeamName: {SapphireTeamName}\n'
-                                  f'AmberTeamName: {AmberTeamName}\n'
-                                  f'EitherTeamName: {EitherTeamName}\n'
-                                  f'EnableHeroDraft: {EnableHeroDraft}\n'
-                                  f'Heroes: {Heroes}\n'
-                                  f'Some settings hidden, please edit config file\n'
-                                  f'Available presets: {presets_string}\n'
-                                  f'Presets will override the above settings')
-
+            await send_default_config(ctx.author)
             await ctx.respond('Check your DMs', ephemeral=True)
             print(f'Sent default config readout to {ctx.author.display_name}')
 
@@ -335,7 +312,6 @@ async def on_ready():
     systemtime = datetime.datetime.now()
     bottime = datetime.datetime.now(ZoneInfo(BotTimezone))
     print(f'System Time: {systemtime.strftime("%Y-%m-%d %H:%M:%S")} Bot Time: {bottime.strftime("%Y-%m-%d %H:%M:%S")} (Timezone: {BotTimezone})')
-    print(f'Available presets: {presets_string}')
     print('Default config options:')
     print(f'BotGame: {BotGame}')
     print(f'BotAdminRole: {BotAdminRole}')
@@ -353,6 +329,8 @@ async def on_ready():
     print(f'AmberTeamName: {AmberTeamName}')
     print(f'EitherTeamName: {EitherTeamName}')
     print(f'EnableHeroDraft: {EnableHeroDraft}')
+    print(f'Heroes: {Heroes}')
+    print(f'Available presets: {presets_string}')
     print('------------------------------------------------------')
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
     print(f'{bot.user} is connected to the following guild(s):')
@@ -851,6 +829,30 @@ async def is_message_deleted(channel, message_id):
         return True
 
 
+async def send_default_config(user):
+    await user.send(f'Current default configuration:\n'
+                    f'BotTimezone: {BotTimezone}\n'
+                    f'BotGame: {BotGame}\n'
+                    f'BotAdminRole : {BotAdminRole}\n'
+                    f'LobbyChannelName: {LobbyChannelName}\n'
+                    f'LobbyRole: {LobbyRole}\n'
+                    f'LobbyRolePing: {LobbyRolePing}\n'
+                    f'LobbyAutoLaunch: {LobbyAutoLaunch}\n'
+                    f'LobbyAutoReset: {LobbyAutoReset}\n'
+                    f'LobbyMessageTitle: {LobbyMessageTitle}\n'
+                    f'LobbyMessageColor: {LobbyMessageColor}\n'
+                    f'ActiveMessageColor: {ActiveMessageColor}\n'
+                    f'LobbyThreshold: {LobbyThreshold}\n'
+                    f'LobbyCooldown: {LobbyCooldown}\n'
+                    f'SapphireTeamName: {SapphireTeamName}\n'
+                    f'AmberTeamName: {AmberTeamName}\n'
+                    f'EitherTeamName: {EitherTeamName}\n'
+                    f'EnableHeroDraft: {EnableHeroDraft}\n'
+                    f'Heroes: {Heroes}\n'
+                    f'Presets will override the above settings\n'
+                    f'Available presets: {presets_string}')
+
+
 def convert_to_seconds(s):
     return int(timedelta(**{
         Units.get(m.group('unit').lower(), 'seconds'): float(m.group('val'))
@@ -1136,9 +1138,9 @@ class HeroSelect(discord.ui.View):
                 await interaction.response.defer()
                 Lobbies[lobby_number].waiting_for_pick = 0
             else:
-                await interaction.respond(f"{picked_hero} was already drafted, please pick a different hero", ephemeral=True)
+                await interaction.response.send_message(f"{picked_hero} was already drafted, please pick a different hero", ephemeral=True)
         else:
-            await interaction.respond(f"It is not your turn to draft", ephemeral=True)
+            await interaction.response.send_message(f"It is not your turn to draft", ephemeral=True)
 
 
 class LeaveButton(discord.ui.View):
@@ -1307,6 +1309,18 @@ class AdminButtons(discord.ui.View):
             return
         else:
             await interaction.response.send_modal(SettingModal(title=f"Change {Lobbies[lobby_number].selected_setting} Setting"))
+
+    @discord.ui.button(label="Get default cfg", style=discord.ButtonStyle.secondary, row=4)
+    async def cfgread_button_callback(self, button, interaction):
+        print(f'Received cfg readout command from {interaction.user.display_name}')
+        await send_default_config(interaction.user)
+        await interaction.response.defer()
+
+    @discord.ui.button(label="Reload Presets", style=discord.ButtonStyle.secondary, row=4)
+    async def preset_button_callback(self, button, interaction):
+        print(f'Received reload presets command from {interaction.user.display_name}')
+        load_presets()
+        await interaction.response.send_message(f"Presets reloaded. Available presets: {presets_string}")
 
 
 bot.run(DiscordBotToken)
