@@ -1,12 +1,33 @@
 ## lobby-bot-dl
-Discord bot designed to place users into a "lobby" that directs players to a server once a set amount have joined. 
-Users join by clicking a button in discord.
-The bot will then split the lobby members into two teams, and send team assignments and connect info via DM.
+A discord bot designed to place users into a lobby that directs players to a server once a set amount have joined. 
+Users join the lobby by clicking a button in discord.
+Once a threshold is reached the bot will split the lobby members into two teams, and send team assignments and connect info via DM.
 
-![ExampleLobby1](https://i.imgur.com/0UdUNIs.png) ![ExampleLobby2](https://i.imgur.com/VuqXvMy.png)
+#### Key features
 
-The bot also supports presets that act as templates to easily create lobbies for different regions, games, team sizes, etc.
-The config/presets/ folder has example configs showing which settings are templatable. These settings will override the defaults in config.json when a lobby is created.
+- Team selection
+  - Players can select whichever team they'd like, or click "Either" to fill any remaining spots
+- Full hero draft
+  - If enabled, the bot will message all players one by one to draft a hero. Draft information is updated live in the lobby message. Heroes can be set in config/heroes.json
+- Preset support
+  - Presets can be made to template most available options. Allows you to easily create lobbies for different regions, games, etc.
+- Kick/Ban system
+  - Bans are persistent across bot restarts and are bot-wide (not specific to a single lobby)
+- Private admin panel
+  - Shows the lobby state, values of important settings, and allows you to change settings, kick/ban players, and perform other admin functions
+
+#### Screenshots
+Example lobby:
+
+![Example Lobby](https://i.imgur.com/bQ32Eq3.png)
+
+Hero draft:
+
+![Hero Draft](https://i.imgur.com/BXHB2yr.png)
+
+Admin panel:
+
+![Admin Panel](https://i.imgur.com/nS9PJg1.png)
 
 ### Usage
 
@@ -17,14 +38,14 @@ Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET```
 The Preset field is case sensitive, the command discription will tell you what presets are available.
 If no presets are added to the /config/presets/ folder, default will be the only available selection.
 
-The bot will also send an admin panel to whoever issues the command to start the lobby:
+When a lobby is started you will receive a DM with the Admin Panel.
 
-![Admin Panel](https://i.imgur.com/eyLJZda.png)
+Admin panel functions:
 
-- Launch Lobby - Launches the lobby when LobbyAutoLaunch is False. If LobbyAutoLaunch is True this button does nothing
+- Proceed - when LobbyAutoLaunch is False the lobby will wait for the host to press this button before beginning the hero draft or launching the lobby. If LobbyAutoLaunch is True this button does nothing as the lobby will take these steps automatically
 - Reset Lobby - removes all players but keeps the lobby open
 - Close Lobby - closes the lobby completely
-- Shuffle Teams - Randomizes teams, if there are any fill players it will move them to a team
+- Shuffle Teams - Randomizes teams, if there are any fill players it will move them to a team. You can shuffle a team up until the hero draft is started
 - Resend Connect Info - resend server address and password to lobby members via DM. Only works after the lobby has launched
 - DM Players - opens a modal to send any text to all current lobby players via DM
 - Kick Player - Kicks a player from the lobby, requires their discord User ID.
@@ -43,9 +64,13 @@ Select what variable you want to change, then hit the Change Setting button. A w
 
 Any settings changed this way are only for that single lobby and will not change any of the default or preset settings.
 
+The last two buttons:
+- Get default cfg - Sends you a DM with the current default configuration. This will reflect any changes made with /lbset since the bot was started
+- Reload Presets - Loads all preset .json files in config/presets/. Useful if you want to create new configs without restarting the bot completely
+
 ### Discord set-up
 The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires the "Members" Privileged Gateway Intent, permission to mention roles, and the ability to mention those roles in server settings.
-The server should have a dedicated channel (see config below)
+The server should have a dedicated channel so the lobby is always visible at the bottom of a channel (see config below)
 
 ### Configuration
 Copy config/config_example.json to config/config.json and edit accordingly. 
@@ -69,6 +94,7 @@ Settings:
 - LobbyThreshold* - The number of players required to launch the lobby. Total number of players (two teams and "either"). Should be even.
 - LobbyCooldown* - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc). Note that using the Admin Panel reset button will force the bot to do nothing when the cooldown has passed (lobby can be reset manually via Admin Panel)
 - SapphireTeamName*, AmberTeamName*, and EitherTeamName - The team names for the lobby (left, right, and fill teams respectively)
+- EnableHeroDraft* - Enables hero draft once the lobby fills up. Heroes are set in config/heroes.json but limited to 25. Heroes are set at bot start and can't be reloaded while running
 
 ### Slash Command Configuration (/lbset)
 Any option listed with an asterisk(*) above can be modified on the fly by using ```/lbset SETTING VALUE```. Tab completion also works for those settings that are settable using the command.
@@ -82,6 +108,7 @@ Examples:
 - ```/lbset LobbyCooldown 2h```
 - ```/lbset LobbyMessageTitle 6v6 Playtest```
 - ```/lbset AmberTeamName Teen Girl Squad```
+- ```/lbset EnableHeroDraft True```
 
 Setting names are not case-sensitive, however the setting values need to follow the same format as in the config or things will start breaking.
 Cooldown needs to have units (s, m, or h), colors are in hex, thresholds are integers, and Enable options are true/false.
