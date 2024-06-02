@@ -16,26 +16,5 @@
     "SapphireTeamName": "THE SATIRE NAME",
     "AmberTeamName": "THE AMPER SAND",
     "EitherTeamName": "EITHER",
-    "EnableHeroDraft": "True",
-    "Heroes":[
-        "Scout",
-        "Soldier",
-        "Pyro",
-        "Demoman",
-        "Heavy",
-        "Engineer",
-        "Medic",
-        "Sniper",
-        "Spy",
-        "Mercy",
-        "Doomguy",
-        "Pikachu",
-        "Bittercup",
-        "ED-E",
-        "Megaera",
-        "Dutch",
-        "Harry Potter",
-        "Lionel Messi",
-        "Anti-Mage"
-        ]
+    "EnableHeroDraft": "True"
 }
