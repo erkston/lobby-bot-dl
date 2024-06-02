@@ -498,26 +498,18 @@ async def update_message(lobby_number):
     elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and not Lobbies[lobby_number].launched:
         if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].draft_complete:
             if not Lobbies[lobby_number].drafting_heroes:
-                print(f'lobby{lobby_number}: Lobby is waiting for host to start draft')
                 embed = discord.Embed(title=f'Hero draft is about to start', description="Waiting for host...", color=int(ActiveMessageColor, 16))
             else:
-                print(f'lobby{lobby_number}: Lobby is in hero draft phase, displaying draft information')
                 embed = discord.Embed(title=f'Hero draft is ongoing', description=f"Currently drafting: {Lobbies[lobby_number].drafter.display_name} \n You will receive a DM when it's your turn to draft", color=int(ActiveMessageColor, 16))
         elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].draft_complete:
             if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-                print(f'lobby{lobby_number}: Draft is complete and LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, launching lobby')
-                await launch_lobby(lobby_number)
-                return
+                embed = discord.Embed(title=f'Hero draft is complete!', description='Lobby is launching...', color=int(ActiveMessageColor, 16))
             else:
-                print(f'lobby{lobby_number}: Draft is complete and LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, updating title')
                 embed = discord.Embed(title=f'Hero draft is complete!', description='Waiting for host...', color=int(ActiveMessageColor, 16))
         elif not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
             if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-                print(f'lobby{lobby_number}: Draft is not enabled and LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, launching lobby')
-                await launch_lobby(lobby_number)
-                return
+                embed = discord.Embed(title=f'Lobby is full!', description='Lobby is launching...', color=int(ActiveMessageColor, 16))
             else:
-                print(f'lobby{lobby_number}: Draft is not enabled and LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, updating title')
                 embed = discord.Embed(title=f'Lobby is full!', description='Waiting for host...', color=int(ActiveMessageColor, 16))
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
@@ -534,7 +526,7 @@ async def update_message(lobby_number):
 
     elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and Lobbies[lobby_number].launched:
         print(f'lobby{lobby_number}: Lobby activated and launched, displaying final player list')
-        embed = discord.Embed(title=f'Lobby is starting!', description='Check your DMs for connect info', color=int(ActiveMessageColor, 16))
+        embed = discord.Embed(title=f'Lobby has started!', description='Check your DMs for connect info', color=int(ActiveMessageColor, 16))
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
@@ -1198,9 +1190,11 @@ class AdminButtons(discord.ui.View):
         if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].draft_complete:
             await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
             await launch_lobby(lobby_number)
+            return
         if Lobbies[lobby_number].active and not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
             await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
             await launch_lobby(lobby_number)
+            return
 
     @discord.ui.button(label="Reset Lobby", style=discord.ButtonStyle.blurple, row=0)
     async def reset_button_callback(self, button, interaction):
