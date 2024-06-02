@@ -34,34 +34,25 @@ AmberTeamName = config['AmberTeamName']
 EitherTeamName = config['EitherTeamName']
 EnableHeroDraft = config['EnableHeroDraft']
 
-with open("config/heroes.json", "r") as heroesjsonfile:
-    heroesjson = json.load(heroesjsonfile)
-Heroes = heroesjson['Heroes']
-
-with open("config/banner_sapp.png", "rb") as bansa:
-    banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
-with open("config/banner_ambr.png", "rb") as banam:
-    banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
-
-
 version = "v0.1.0"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
-Bans = []
-Presets = []
-presets_string = ""
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
 lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
                     "LobbyThreshold", "LobbyCooldown", "SapphireTeamName", "AmberTeamName", "EitherTeamName", "EnableHeroDraft"]
 lbcomCommandList = ["GetCfg", "ReloadPresets"]
 
-with open("bans.json", "r") as bansjsonfile:
-    JSONBans = json.load(bansjsonfile)
-i = 0
-for ban in JSONBans:
-    Bans.append([ban[0], ban[1], ban[2]])
+
+def load_bans():
+    global Bans
+    Bans = []
+    with open("bans.json", "r") as bansjsonfile:
+        JSONBans = json.load(bansjsonfile)
+    i = 0
+    for ban in JSONBans:
+        Bans.append([ban[0], ban[1], ban[2]])
 
 
 def load_presets():
@@ -75,7 +66,19 @@ def load_presets():
     return
 
 
+def load_heroes():
+    global Heroes, heroes_string
+    Heroes = []
+    heroes_string = ""
+    with open("config/heroes.json", "r") as heroesjsonfile:
+        heroesjson = json.load(heroesjsonfile)
+    Heroes = heroesjson['Heroes']
+    heroes_string = ", ".join(Heroes)
+
+
+load_bans()
 load_presets()
+load_heroes()
 
 
 class Bot(discord.Bot):
@@ -216,8 +219,9 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
 
         elif command.casefold() == "reloadpresets":
             load_presets()
-            await ctx.respond(f'Presets reloaded. Available: {presets_string}', ephemeral=True)
-            print(f'{ctx.author.display_name} reloaded presets. Available: {presets_string}')
+            await ctx.respond(f'Presets reloaded. Available presets: {presets_string}', ephemeral=True)
+            print(f'{ctx.author.display_name} reloaded presets. Available presets: {presets_string}')
+
         else:
             await ctx.respond(f'Command not found', ephemeral=True)
     else:
@@ -329,7 +333,7 @@ async def on_ready():
     print(f'AmberTeamName: {AmberTeamName}')
     print(f'EitherTeamName: {EitherTeamName}')
     print(f'EnableHeroDraft: {EnableHeroDraft}')
-    print(f'Heroes: {Heroes}')
+    print(f'Heroes: {heroes_string}')
     print(f'Available presets: {presets_string}')
     print('------------------------------------------------------')
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
@@ -362,6 +366,7 @@ async def on_ready():
         if message.author == bot.user:
             print(f'Found old message from {bot.user}, deleting it')
             await message.delete()
+
     print('------------------------------------------------------')
     Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
                                  "preset", [], [], [], [], [], [],
@@ -718,6 +723,10 @@ async def shuffle_teams(lobby_number):
 
 async def send_lobby_info(lobby_number):
     print(f'lobby{lobby_number}: Sending DMs with team and connect info...')
+    with open("config/banner_sapp.png", "rb") as bansa:
+        banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
+    with open("config/banner_ambr.png", "rb") as banam:
+        banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
     for player in Lobbies[lobby_number].sapp_players:
         await player.send(f"\nYou are on team {Lobbies[lobby_number].sapphire_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_sapp)
@@ -848,7 +857,7 @@ async def send_default_config(user):
                     f'AmberTeamName: {AmberTeamName}\n'
                     f'EitherTeamName: {EitherTeamName}\n'
                     f'EnableHeroDraft: {EnableHeroDraft}\n'
-                    f'Heroes: {Heroes}\n'
+                    f'Heroes: {heroes_string}\n'
                     f'Presets will override the above settings\n'
                     f'Available presets: {presets_string}')
 
@@ -1297,7 +1306,7 @@ class AdminButtons(discord.ui.View):
     async def select_callback(self, select, interaction):
         lobby_number = await get_lobby_number(interaction)
         Lobbies[lobby_number].selected_setting = select.values[0]
-        print(f"lobby{lobby_number}: Lobbies[lobby_number].selected_setting = {Lobbies[lobby_number].selected_setting}")
+        print(f"lobby{lobby_number}: admin setting dropdown set to {Lobbies[lobby_number].selected_setting}")
         await interaction.response.defer()
 
     @discord.ui.button(label="Change Setting", style=discord.ButtonStyle.blurple, row=4)
@@ -1320,7 +1329,7 @@ class AdminButtons(discord.ui.View):
     async def preset_button_callback(self, button, interaction):
         print(f'Received reload presets command from {interaction.user.display_name}')
         load_presets()
-        await interaction.response.send_message(f"Presets reloaded. Available presets: {presets_string}")
+        await interaction.response.send_message(f"Presets reloaded. Available presets: {presets_string}", ephemeral=True)
 
 
 bot.run(DiscordBotToken)
