@@ -1231,11 +1231,11 @@ class AdminButtons(discord.ui.View):
     async def resend_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received resend info command from {interaction.user.display_name}')
-        if Lobbies[lobby_number].active:
+        if Lobbies[lobby_number].launched:
             await send_lobby_info(lobby_number)
             await interaction.response.send_message(f"Connect info resent", ephemeral=True)
         else:
-            await interaction.response.send_message(f"Lobby is not active, sent nothing", ephemeral=True)
+            await interaction.response.send_message(f"Lobby is not launched, sent nothing", ephemeral=True)
 
     @discord.ui.button(label="DM Players", style=discord.ButtonStyle.secondary, row=1)
     async def dm_button_callback(self, button, interaction):
