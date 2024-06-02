@@ -38,6 +38,12 @@ with open("config/heroes.json", "r") as heroesjsonfile:
     heroesjson = json.load(heroesjsonfile)
 Heroes = heroesjson['Heroes']
 
+with open("config/banner_sapp.png", "rb") as bansa:
+    banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
+with open("config/banner_ambr.png", "rb") as banam:
+    banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
+
+
 version = "v0.1.0"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
@@ -299,7 +305,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                 tempconfig = json.load(jsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
                                              [], [], [], [], [], 0,
-                                             0, 0, discord.User, "hero",0, 0,
+                                             0, 0, discord.User, "hero", 0, 0,
                                              temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                                              tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'],
@@ -309,7 +315,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, Heroes
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
-                                         [], [], [], [], 0,0, 0, discord.User,
+                                         [], [], [], [], 0, 0, 0, discord.User,
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
                                          LobbyMessageColor, ActiveMessageColor, LobbyThreshold,LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName,
                                          0, "none", EnableHeroDraft, discord.Message))
@@ -668,10 +674,10 @@ async def draft_heroes(lobby_number):
 
 async def get_player_pick(lobby_number, player):
     Lobbies[lobby_number].selected_hero = ""
-    picked_heroes_string = "\n".join(Lobbies[lobby_number].picked_heroes)
+    picked_heroes_string = ", ".join(Lobbies[lobby_number].picked_heroes)
     if not picked_heroes_string:
         picked_heroes_string = "None"
-    draft_msg = await player.send(f"Please select a hero\nHeroes already picked: {picked_heroes_string}", view=HeroSelect(timeout=None))
+    draft_msg = await player.send(f"Please select a hero\nHeroes already picked:\n{picked_heroes_string}", view=HeroSelect(timeout=None))
     Lobbies[lobby_number].draft_msg = draft_msg
 
 
@@ -736,11 +742,9 @@ async def send_lobby_info(lobby_number):
     print(f'lobby{lobby_number}: Sending DMs with team and connect info...')
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
     for player in Lobbies[lobby_number].sapp_players:
-        await player.send(
-            f"\nPlease join {Lobbies[lobby_number].sapphire_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}")
+        await player.send(f"\nYou are on team {Lobbies[lobby_number].sapphire_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_sapp)
     for player in Lobbies[lobby_number].ambr_players:
-        await player.send(
-            f"\nPlease join {Lobbies[lobby_number].amber_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}")
+        await player.send(f"\nYou are on team {Lobbies[lobby_number].amber_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_ambr)
 
 
 async def update_all_lobby_messages():
@@ -757,7 +761,8 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].waiting_for_pick = 0
     Lobbies[lobby_number].draft_complete = 0
     Lobbies[lobby_number].launched = 0
-    Lobbies[lobby_number].drafter = 0
+    Lobbies[lobby_number].drafter = discord.User
+    Lobbies[lobby_number].draft_msg = discord.Message
     Lobbies[lobby_number].sapp_players.clear()
     Lobbies[lobby_number].ambr_players.clear()
     Lobbies[lobby_number].fill_players.clear()
@@ -840,6 +845,8 @@ async def is_message_deleted(channel, message_id):
     try:
         await channel.fetch_message(message_id)
         return False
+    except AttributeError:
+        return True
     except discord.errors.NotFound:
         return True
 
