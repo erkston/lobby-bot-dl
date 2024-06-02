@@ -1,6 +1,6 @@
 class Lobby:
     def __init__(self, lobby_number, message_id, host, admin_msg_id, server, password, preset, sapp_players, ambr_players,
-                 fill_players, sapp_heroes, ambr_heroes, picked_heroes, active, start_draft, drafting_heroes, waiting_for_pick, drafter,
+                 fill_players, sapp_heroes, ambr_heroes, picked_heroes, active, drafting_heroes, waiting_for_pick, drafter,
                  selected_hero, draft_complete, launched, lobby_role, lobby_role_ping, lobby_auto_launch, lobby_auto_reset,
                  lobby_message_title, lobby_message_color, active_message_color, lobby_threshold, lobby_cooldown, sapphire_name,
                  amber_name, either_name, manual_mode, selected_setting, enable_hero_draft, draft_msg):
@@ -18,7 +18,6 @@ class Lobby:
         self.ambr_heroes = ambr_heroes
         self.picked_heroes = picked_heroes
         self.active = active
-        self.start_draft = start_draft
         self.drafting_heroes = drafting_heroes
         self.waiting_for_pick = waiting_for_pick
         self.drafter = drafter

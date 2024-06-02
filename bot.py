@@ -299,7 +299,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                 tempconfig = json.load(jsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
                                              [], [], [], [], [], 0,
-                                             0,0, 0, "drafter", "hero",0, 0,
+                                             0, 0, "drafter", "hero",0, 0,
                                              temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                                              tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'],
@@ -309,7 +309,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, Heroes
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
-                                         [], [], [], [], 0, 0,0, 0, "drafter",
+                                         [], [], [], [], 0,0, 0, "drafter",
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
                                          LobbyMessageColor, ActiveMessageColor, LobbyThreshold,LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName,
                                          0, "none", EnableHeroDraft, discord.Message))
@@ -381,7 +381,7 @@ async def on_ready():
     print('------------------------------------------------------')
     Lobbies.append(classes.Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
                                  "preset", [], [], [], [], [], [],
-                                 0, 0, 0,  0, "drafter", "none",
+                                 0,  0,  0, "drafter", "none",
                                  0, 0, "role", "True","True",
                                  "True", "Title", "FFFFFF","FFFFFF",
                                  0, 0, 0, 0, 0, 0,
@@ -751,7 +751,6 @@ async def update_all_lobby_messages():
 
 async def reset_lobby(lobby_number):
     Lobbies[lobby_number].active = 0
-    Lobbies[lobby_number].start_draft = 0
     Lobbies[lobby_number].drafting_heroes = 0
     Lobbies[lobby_number].waiting_for_pick = 0
     Lobbies[lobby_number].draft_complete = 0
