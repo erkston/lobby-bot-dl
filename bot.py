@@ -299,7 +299,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                 tempconfig = json.load(jsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
                                              [], [], [], [], [], 0,
-                                             0, 0, "drafter", "hero",0, 0,
+                                             0, 0, discord.User, "hero",0, 0,
                                              temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                                              tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'],
@@ -309,7 +309,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, Heroes
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
-                                         [], [], [], [], 0,0, 0, "drafter",
+                                         [], [], [], [], 0,0, 0, discord.User,
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
                                          LobbyMessageColor, ActiveMessageColor, LobbyThreshold,LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName,
                                          0, "none", EnableHeroDraft, discord.Message))
@@ -379,9 +379,9 @@ async def on_ready():
             print(f'Found old message from {bot.user}, deleting it')
             await message.delete()
     print('------------------------------------------------------')
-    Lobbies.append(classes.Lobby(0, 0, "host", 0, "0.0.0.0", "pass",
+    Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
                                  "preset", [], [], [], [], [], [],
-                                 0,  0,  0, "drafter", "none",
+                                 0,  0,  0, discord.User, "none",
                                  0, 0, "role", "True","True",
                                  "True", "Title", "FFFFFF","FFFFFF",
                                  0, 0, 0, 0, 0, 0,
@@ -513,7 +513,7 @@ async def update_message(lobby_number):
                 embed = discord.Embed(title=f'Hero draft is about to start', description="Waiting for host...", color=int(ActiveMessageColor, 16))
             else:
                 print(f'lobby{lobby_number}: Lobby is in hero draft phase, displaying draft information')
-                embed = discord.Embed(title=f'Hero draft is ongoing', description="You will receive a DM when it's your turn to draft", color=int(ActiveMessageColor, 16))
+                embed = discord.Embed(title=f'Hero draft is ongoing', description=f"Currently drafting: {Lobbies[lobby_number].drafter.display_name} \n You will receive a DM when it's your turn to draft", color=int(ActiveMessageColor, 16))
         elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].draft_complete:
             if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
                 print(f'lobby{lobby_number}: Draft is complete and LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, launching lobby')
@@ -636,6 +636,7 @@ async def draft_heroes(lobby_number):
         while i < len(Lobbies[lobby_number].sapp_players):
             Lobbies[lobby_number].waiting_for_pick = 1
             Lobbies[lobby_number].drafter = Lobbies[lobby_number].sapp_players[i]
+            await update_message(lobby_number)
             await get_player_pick(lobby_number, Lobbies[lobby_number].sapp_players[i])
             while Lobbies[lobby_number].waiting_for_pick:
                 await asyncio.sleep(1)
@@ -645,6 +646,7 @@ async def draft_heroes(lobby_number):
 
             Lobbies[lobby_number].waiting_for_pick = 1
             Lobbies[lobby_number].drafter = Lobbies[lobby_number].ambr_players[i]
+            await update_message(lobby_number)
             await get_player_pick(lobby_number, Lobbies[lobby_number].ambr_players[i])
             while Lobbies[lobby_number].waiting_for_pick:
                 await asyncio.sleep(1)
