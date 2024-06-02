@@ -34,7 +34,7 @@ AmberTeamName = config['AmberTeamName']
 EitherTeamName = config['EitherTeamName']
 EnableHeroDraft = config['EnableHeroDraft']
 
-version = "v0.1.0"
+version = "v0.2.0"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
