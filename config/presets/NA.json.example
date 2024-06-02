@@ -10,5 +10,6 @@
     "LobbyCooldown": "75m",
     "SapphireTeamName": "GEORGE WASHINGTON",
     "AmberTeamName": "ABE LINCOLN",
-    "EitherTeamName": "EITHER"
+    "EitherTeamName": "EITHER",
+    "EnableHeroDraft": "True"
 }

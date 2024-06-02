@@ -10,5 +10,6 @@
     "LobbyCooldown": "75m",
     "SapphireTeamName": "EUROPEAN",
     "AmberTeamName": "UNION",
-    "EitherTeamName": "UK"
+    "EitherTeamName": "UK",
+    "EnableHeroDraft": "True"
 }
