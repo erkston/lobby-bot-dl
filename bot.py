@@ -723,14 +723,14 @@ async def shuffle_teams(lobby_number):
 
 async def send_lobby_info(lobby_number):
     print(f'lobby{lobby_number}: Sending DMs with team and connect info...')
-    with open("config/banner_sapp.png", "rb") as bansa:
-        banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
-    with open("config/banner_ambr.png", "rb") as banam:
-        banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
     for player in Lobbies[lobby_number].sapp_players:
+        with open("config/banner_sapp.png", "rb") as bansa:
+            banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
         await player.send(f"\nYou are on team {Lobbies[lobby_number].sapphire_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_sapp)
     for player in Lobbies[lobby_number].ambr_players:
+        with open("config/banner_ambr.png", "rb") as banam:
+            banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
         await player.send(f"\nYou are on team {Lobbies[lobby_number].amber_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_ambr)
 
 
