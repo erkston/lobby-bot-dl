@@ -983,8 +983,8 @@ class SettingModal(discord.ui.Modal):
             await update_admin_panel(lobby_number)
             return
         elif Lobbies[lobby_number].selected_setting == "LobbyThreshold":
-            if Lobbies[lobby_number].active or Lobbies[lobby_number].launched:
-                await interaction.response.send_message(f"Lobby is either full or already launched, can't change LobbyThreshold right now", ephemeral=True)
+            if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].draft_complete or Lobbies[lobby_number].launched:
+                await interaction.response.send_message(f"It's too late to change LobbyThreshold right now", ephemeral=True)
                 return
             else:
                 Lobbies[lobby_number].lobby_threshold = value
