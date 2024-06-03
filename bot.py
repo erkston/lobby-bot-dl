@@ -734,6 +734,22 @@ async def update_all_lobby_messages():
             lobby_number += 1
 
 
+async def size_lobby(lobby_number):
+    if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
+        return
+    current_lobby_size = len(Lobbies[lobby_number].sapp_players) + len(Lobbies[lobby_number].ambr_players) + len(Lobbies[lobby_number].fill_players)
+    if current_lobby_size <= int(Lobbies[lobby_number].lobby_threshold):
+        return
+    team_size = int(Lobbies[lobby_number].lobby_threshold)/2
+    pop_index = int(team_size) - 1
+    while len(Lobbies[lobby_number].sapp_players) > team_size:
+        print(f'lobby{lobby_number}: {Lobbies[lobby_number].sapphire_name} too big, player {Lobbies[lobby_number].sapp_players[pop_index].display_name} kicked')
+        del Lobbies[lobby_number].sapp_players[pop_index]
+    while len(Lobbies[lobby_number].ambr_players) > team_size:
+        print(f'lobby{lobby_number}: {Lobbies[lobby_number].amber_name} too big, player {Lobbies[lobby_number].ambr_players[pop_index].display_name} kicked')
+        del Lobbies[lobby_number].ambr_players[pop_index]
+
+
 async def reset_lobby(lobby_number):
     Lobbies[lobby_number].active = 0
     Lobbies[lobby_number].drafting_heroes = 0
@@ -989,6 +1005,7 @@ class SettingModal(discord.ui.Modal):
             else:
                 Lobbies[lobby_number].lobby_threshold = value
                 await interaction.response.send_message(f"Lobby {lobby_number} LobbyThreshold changed to {Lobbies[lobby_number].lobby_threshold}", ephemeral=True)
+                await size_lobby(lobby_number)
                 await update_message(lobby_number)
                 await update_admin_panel(lobby_number)
                 return
