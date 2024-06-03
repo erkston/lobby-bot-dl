@@ -411,21 +411,21 @@ async def update_admin_panel(lobby_number):
     else:
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].draft_complete:
+                if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, hero draft will begin automatically')
                 elif Lobbies[lobby_number].drafting_heroes:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft is ongoing and will launch automatically when complete')
-                elif Lobbies[lobby_number].draft_complete:
+                elif Lobbies[lobby_number].hero_draft_completed:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete, lobby will launch automaticalls')
             else:
                 embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full and will launch automatically')
         else:
             if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].draft_complete:
+                if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, hero draft will begin when you hit Proceed')
                 elif Lobbies[lobby_number].drafting_heroes:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft is ongoing, lobby will not launch until you hit Proceed')
-                elif Lobbies[lobby_number].draft_complete:
+                elif Lobbies[lobby_number].hero_draft_completed:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete but will not launch until you hit Proceed')
             else:
                 embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full but will not launch until you hit Proceed')
@@ -452,14 +452,14 @@ async def update_message(lobby_number):
     fill_players = []
     i = 0
     while i < len(Lobbies[lobby_number].sapp_players):
-        if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].draft_complete:
+        if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
             sapp_players.append(str(Lobbies[lobby_number].sapp_players[i].display_name) + " - " + Lobbies[lobby_number].sapp_heroes[i])
         else:
             sapp_players.append(str(Lobbies[lobby_number].sapp_players[i].display_name))
         i += 1
     i = 0
     while i < len(Lobbies[lobby_number].ambr_players):
-        if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].draft_complete:
+        if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
             ambr_players.append(str(Lobbies[lobby_number].ambr_players[i].display_name) + " - " + Lobbies[lobby_number].ambr_heroes[i])
         else:
             ambr_players.append(str(Lobbies[lobby_number].ambr_players[i].display_name))
@@ -496,12 +496,12 @@ async def update_message(lobby_number):
         await lobby_message.edit(embed=embed, view=LobbyButtons(timeout=None))
         return
     elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and not Lobbies[lobby_number].launched:
-        if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].draft_complete:
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
             if not Lobbies[lobby_number].drafting_heroes:
                 embed = discord.Embed(title=f'Hero draft is about to start', description="Waiting for host...", color=int(ActiveMessageColor, 16))
             else:
                 embed = discord.Embed(title=f'Hero draft is ongoing', description=f"Currently drafting: {Lobbies[lobby_number].drafter.display_name} \n You will receive a DM when it's your turn to draft", color=int(ActiveMessageColor, 16))
-        elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].draft_complete:
+        elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].hero_draft_completed:
             if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
                 embed = discord.Embed(title=f'Hero draft is complete!', description='Lobby is launching...', color=int(ActiveMessageColor, 16))
             else:
@@ -518,7 +518,7 @@ async def update_message(lobby_number):
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
 
-        if Lobbies[lobby_number].active and not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].draft_complete and not Lobbies[lobby_number].launched:
+        if Lobbies[lobby_number].active and not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].launched:
             await lobby_message.edit(embed=embed, view=LeaveButton(timeout=None))
             return
         await lobby_message.edit(embed=embed, view=None)
@@ -637,11 +637,11 @@ async def draft_heroes(lobby_number):
             i += 1
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             Lobbies[lobby_number].drafting_heroes = 0
-            Lobbies[lobby_number].draft_complete = 1
+            Lobbies[lobby_number].hero_draft_completed = 1
             await launch_lobby(lobby_number)
         else:
             Lobbies[lobby_number].drafting_heroes = 0
-            Lobbies[lobby_number].draft_complete = 1
+            Lobbies[lobby_number].hero_draft_completed = 1
             await update_message(lobby_number)
             await update_admin_panel(lobby_number)
             await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} hero draft is complete and waiting for you to launch the lobby (Click Proceed)")
@@ -738,7 +738,7 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].active = 0
     Lobbies[lobby_number].drafting_heroes = 0
     Lobbies[lobby_number].waiting_for_pick = 0
-    Lobbies[lobby_number].draft_complete = 0
+    Lobbies[lobby_number].hero_draft_completed = 0
     Lobbies[lobby_number].launched = 0
     Lobbies[lobby_number].drafter = discord.User
     Lobbies[lobby_number].draft_msg = discord.Message
@@ -983,7 +983,7 @@ class SettingModal(discord.ui.Modal):
             await update_admin_panel(lobby_number)
             return
         elif Lobbies[lobby_number].selected_setting == "LobbyThreshold":
-            if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].draft_complete or Lobbies[lobby_number].launched:
+            if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed or Lobbies[lobby_number].launched:
                 await interaction.response.send_message(f"It's too late to change LobbyThreshold right now", ephemeral=True)
                 return
             else:
@@ -1183,11 +1183,11 @@ class AdminButtons(discord.ui.View):
         if not Lobbies[lobby_number].active:
             await interaction.response.send_message(f"Can't launch yet, lobby is not full", ephemeral=True)
             return
-        if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].draft_complete:
+        if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
             await interaction.response.send_message(f"Starting hero draft for Lobby {lobby_number}", ephemeral=True)
             await draft_heroes(lobby_number)
             return
-        if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].draft_complete:
+        if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].hero_draft_completed:
             await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
             await launch_lobby(lobby_number)
             return
@@ -1215,7 +1215,7 @@ class AdminButtons(discord.ui.View):
     async def shuffle_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         print(f'lobby{lobby_number}: Received shuffle command from {interaction.user.display_name}')
-        if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].draft_complete or Lobbies[lobby_number].launched:
+        if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed or Lobbies[lobby_number].launched:
             await interaction.response.send_message(f"It's too late to shuffle teams", ephemeral=True)
         else:
             await shuffle_teams(lobby_number)
