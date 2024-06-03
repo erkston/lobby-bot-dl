@@ -250,6 +250,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                      preset: discord.Option(str, description=f"Available presets: {presets_string} (Case sensitive)")):
     if bot_admin_role in ctx.author.roles:
         global lobby_role, LobbyRolePing, LobbyAutoLaunch
+        print(f"startlobby: Received command from {ctx.author.display_name}, starting lobby...")
         selected_preset = preset
         if selected_preset in Presets:
             print(f"startlobby: Found Selected preset: {selected_preset}")
@@ -257,14 +258,19 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             print(f"startlobby: Could not find selected preset: {selected_preset}, aborting command")
             await ctx.respond("Could not find that preset, please try again", ephemeral=True)
             return
-        global LobbyCount, Lobbies
+        global LobbyCount, Lobbies, LobbyThreshold
         LobbyCount += 1
         lobby_number = LobbyCount
         print(f'lobby{lobby_number}: Received lobby request from {ctx.author.display_name}, starting Lobby #{lobby_number}')
 
         if selected_preset != "default":
-            with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
-                tempconfig = json.load(jsonfile)
+            with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
+                tempconfig = json.load(presetjsonfile)
+                if int(tempconfig['LobbyThreshold']) % 2 or int(tempconfig['LobbyThreshold']) == 0:
+                    print(f"startlobby: Invalid LobbyThreshold ({tempconfig['LobbyThreshold']}), cancelling lobby")
+                    await ctx.respond(f'LobbyThreshold must be even and non-zero', ephemeral=True)
+                    LobbyCount -= 1
+                    return
                 TempLobbyRole = tempconfig['LobbyRole']
                 for guild in bot.guilds:
                     for role in guild.roles:
@@ -274,6 +280,11 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                 lobby_role_ping = tempconfig['LobbyRolePing']
                 lobby_message = await initialize_lobby(lobby_number, temp_lobby_role, distutils.util.strtobool(lobby_role_ping))
         else:
+            if int(LobbyThreshold) % 2 or int(LobbyThreshold) == 0:
+                print(f"startlobby: Invalid LobbyThreshold ({LobbyThreshold}), cancelling lobby")
+                await ctx.respond(f'LobbyThreshold must be even and non-zero', ephemeral=True)
+                LobbyCount -= 1
+                return
             lobby_message = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(LobbyRolePing))
 
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
@@ -282,8 +293,8 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         admin_panel_msg = await ctx.author.send(embed=embed, view=None)
 
         if selected_preset != "default":
-            with open(f"config/presets/{selected_preset}.json", "r") as jsonfile:
-                tempconfig = json.load(jsonfile)
+            with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
+                tempconfig = json.load(presetjsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
                                              [], [], [], [], [], 0,
                                              0, 0, discord.User, "hero", 0, 0,
@@ -294,7 +305,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                                              0, "none", tempconfig['EnableHeroDraft'], discord.Message))
                 print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
         else:
-            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyThreshold, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, Heroes
+            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, Heroes
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
                                          [], [], [], [], 0, 0, 0, discord.User,
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
@@ -1001,6 +1012,9 @@ class SettingModal(discord.ui.Modal):
         elif Lobbies[lobby_number].selected_setting == "LobbyThreshold":
             if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed or Lobbies[lobby_number].launched:
                 await interaction.response.send_message(f"It's too late to change LobbyThreshold right now", ephemeral=True)
+                return
+            elif int(value) % 2 or int(value) == 0:
+                await interaction.response.send_message(f'LobbyThreshold must be even and non-zero', ephemeral=True)
                 return
             else:
                 Lobbies[lobby_number].lobby_threshold = value
