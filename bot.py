@@ -258,7 +258,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             print(f"startlobby: Could not find selected preset: {selected_preset}, aborting command")
             await ctx.respond("Could not find that preset, please try again", ephemeral=True)
             return
-        global LobbyCount, Lobbies, LobbyThreshold
+        global LobbyCount, Lobbies, LobbyThreshold, Heroes
         LobbyCount += 1
         lobby_number = LobbyCount
         print(f'lobby{lobby_number}: Received lobby request from {ctx.author.display_name}, starting Lobby #{lobby_number}')
@@ -296,7 +296,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
                 tempconfig = json.load(presetjsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
-                                             [], [], [], [], [], 0,
+                                             [], [], [], [], Heroes, [], 0,
                                              0, 0, discord.User, "hero", 0, 0,
                                              temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
@@ -305,9 +305,9 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                                              0, "none", tempconfig['EnableHeroDraft'], discord.Message))
                 print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
         else:
-            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, Heroes
+            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
-                                         [], [], [], [], 0, 0, 0, discord.User,
+                                         [], [], [], Heroes, [], 0, 0, 0, discord.User,
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
                                          LobbyMessageColor, ActiveMessageColor, LobbyThreshold,LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName,
                                          0, "none", EnableHeroDraft, discord.Message))
@@ -380,7 +380,7 @@ async def on_ready():
 
     print('------------------------------------------------------')
     Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
-                                 "preset", [], [], [], [], [], [],
+                                 "preset", [], [], [], [], [], [], [],
                                  0,  0,  0, discord.User, "none",
                                  0, 0, "role", "True","True",
                                  "True", "Title", "FFFFFF","FFFFFF",
@@ -634,8 +634,8 @@ async def draft_heroes(lobby_number):
                 await asyncio.sleep(1)
             Lobbies[lobby_number].sapp_heroes[i] = Lobbies[lobby_number].selected_hero
             Lobbies[lobby_number].picked_heroes.append(Lobbies[lobby_number].selected_hero)
+            await remove_selected_hero(lobby_number)
             await update_message(lobby_number)
-
             Lobbies[lobby_number].waiting_for_pick = 1
             Lobbies[lobby_number].drafter = Lobbies[lobby_number].ambr_players[i]
             await update_message(lobby_number)
@@ -644,6 +644,7 @@ async def draft_heroes(lobby_number):
                 await asyncio.sleep(1)
             Lobbies[lobby_number].ambr_heroes[i] = Lobbies[lobby_number].selected_hero
             Lobbies[lobby_number].picked_heroes.append(Lobbies[lobby_number].selected_hero)
+            await remove_selected_hero(lobby_number)
             await update_message(lobby_number)
             i += 1
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
@@ -663,8 +664,16 @@ async def get_player_pick(lobby_number, player):
     picked_heroes_string = ", ".join(Lobbies[lobby_number].picked_heroes)
     if not picked_heroes_string:
         picked_heroes_string = "None"
-    draft_msg = await player.send(f"Please select a hero\nHeroes already picked:\n{picked_heroes_string}", view=HeroSelect(timeout=None))
+    draft_msg = await player.send(f"Please select a hero\nHeroes already picked:\n{picked_heroes_string}", view=HeroSelect(Lobbies[lobby_number].available_heroes))
     Lobbies[lobby_number].draft_msg = draft_msg
+
+
+async def remove_selected_hero(lobby_number):
+    i = 0
+    while i < len(Lobbies[lobby_number].available_heroes):
+        if Lobbies[lobby_number].available_heroes[i] == Lobbies[lobby_number].selected_hero:
+            del Lobbies[lobby_number].available_heroes[i]
+        i += 1
 
 
 async def get_lobby_number(interaction):
@@ -775,6 +784,7 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].sapp_heroes.clear()
     Lobbies[lobby_number].ambr_heroes.clear()
     Lobbies[lobby_number].picked_heroes.clear()
+    Lobbies[lobby_number].available_heroes = Heroes
     await update_message(lobby_number)
     await update_admin_panel(lobby_number)
     await bot.change_presence(status=discord.Status.online,
@@ -1158,11 +1168,23 @@ class LobbyButtons(discord.ui.View):
 
 
 class HeroSelect(discord.ui.View):
-    @discord.ui.select(placeholder="Select a hero", row=0, min_values=1, max_values=1, options=[discord.SelectOption(label=hero) for hero in Heroes])
-    async def hero_select_callback(self, hero_select, interaction):
+    def __init__(self, avail_heroes):
+        super().__init__(timeout=None)
+        self.avail_heroes = avail_heroes
+        self.hero_options = []
+        self.parse_options()
+
+        select = discord.ui.Select(placeholder="Select a hero", row=0, min_values=1, max_values=1, options=self.hero_options)
+        select.callback = self.hero_select_callback
+        self.add_item(select)
+
+    def parse_options(self):
+        self.hero_options = [discord.SelectOption(label=hero) for hero in self.avail_heroes]
+
+    async def hero_select_callback(self, interaction: discord.Interaction):
         lobby_number = await get_lobby_number(interaction)
         if interaction.user.id == Lobbies[lobby_number].drafter.id:
-            picked_hero = hero_select.values[0]
+            picked_hero = interaction.data["values"][0]
             if picked_hero not in Lobbies[lobby_number].picked_heroes:
                 Lobbies[lobby_number].selected_hero = picked_hero
                 print(f"lobby{lobby_number}: Hero {Lobbies[lobby_number].selected_hero} has been picked")
