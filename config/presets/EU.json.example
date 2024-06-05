@@ -11,5 +11,6 @@
     "SapphireTeamName": "EUROPEAN",
     "AmberTeamName": "UNION",
     "EitherTeamName": "UK",
-    "EnableHeroDraft": "True"
+    "EnableHeroDraft": "True",
+    "EnableImageSend": "False"
 }

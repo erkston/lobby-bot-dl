@@ -11,5 +11,6 @@
     "SapphireTeamName": "GEORGE WASHINGTON",
     "AmberTeamName": "ABE LINCOLN",
     "EitherTeamName": "EITHER",
-    "EnableHeroDraft": "True"
+    "EnableHeroDraft": "True",
+    "EnableImageSend": "False"
 }

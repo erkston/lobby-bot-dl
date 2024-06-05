@@ -33,6 +33,8 @@ SapphireTeamName = config['SapphireTeamName']
 AmberTeamName = config['AmberTeamName']
 EitherTeamName = config['EitherTeamName']
 EnableHeroDraft = config['EnableHeroDraft']
+EnableImageSend = config['EnableImageSend']
+
 
 version = "v0.2.0"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
@@ -41,7 +43,7 @@ Lobbies = []
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
 lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
-                    "LobbyThreshold", "LobbyCooldown", "SapphireTeamName", "AmberTeamName", "EitherTeamName", "EnableHeroDraft"]
+                    "LobbyThreshold", "LobbyCooldown", "SapphireTeamName", "AmberTeamName", "EitherTeamName", "EnableHeroDraft", "EnableImageSend"]
 lbcomCommandList = ["GetCfg", "ReloadPresets", "ReloadHeroes"]
 
 
@@ -197,6 +199,12 @@ async def lbset(ctx, setting: discord.Option(description="Setting name", autocom
             await ctx.respond(f'EnableHeroDraft has been set to {EnableHeroDraft}', ephemeral=True)
             print(f'EnableHeroDraft changed to {EnableHeroDraft} by {ctx.author.display_name}')
 
+        elif setting.casefold() == "emableimagesend":
+            global EnableImageSend
+            EnableImageSend = value
+            await ctx.respond(f'EnableImageSend has been set to {EnableHeroDraft}', ephemeral=True)
+            print(f'EnableImageSend changed to {EnableImageSend} by {ctx.author.display_name}')
+
         else:
             await ctx.respond("I don't have that setting, please try again", ephemeral=True)
             print(f'Received command from {ctx.author.display_name} but I did not understand it :(')
@@ -305,15 +313,15 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
                                              tempconfig['ActiveMessageColor'], tempconfig['LobbyThreshold'], tempconfig['LobbyCooldown'],
                                              tempconfig['SapphireTeamName'], tempconfig['AmberTeamName'], tempconfig['EitherTeamName'],
-                                             0, "none", tempconfig['EnableHeroDraft'], discord.Message))
+                                             0, "none", tempconfig['EnableHeroDraft'], discord.Message, tempconfig['EnableImageSend']))
                 print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
         else:
-            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft
+            global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft, EnableImageSend
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
                                          [], [], [], Heroes[:], [], 0, 0, 0, discord.User,
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
                                          LobbyMessageColor, ActiveMessageColor, LobbyThreshold,LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName,
-                                         0, "none", EnableHeroDraft, discord.Message))
+                                         0, "none", EnableHeroDraft, discord.Message, EnableImageSend))
             print(f'lobby{lobby_number}: Lobby created with default config')
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
@@ -388,7 +396,7 @@ async def on_ready():
                                  0, 0, "role", "True","True",
                                  "True", "Title", "FFFFFF","FFFFFF",
                                  0, 0, 0, 0, 0, 0,
-                                 "none", "True", discord.Message))
+                                 "none", "True", discord.Message, "False"))
     print('Startup complete, awaiting command')
 
 
@@ -447,11 +455,11 @@ async def update_admin_panel(lobby_number):
     if Lobbies[lobby_number].launched == 1:
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is launched! DMs were sent to all players')
 
-    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nLobbyThreshold\nLobbyCooldown\nEnableHeroDraft"
+    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nLobbyThreshold\nLobbyCooldown\nEnableHeroDraft\nEnableImageSend"
     value_string = (f"{Lobbies[lobby_number].server}\n{Lobbies[lobby_number].password}\n{Lobbies[lobby_number].preset}\n{Lobbies[lobby_number].lobby_auto_launch}\n"
                     f"{Lobbies[lobby_number].lobby_auto_reset}\n{Lobbies[lobby_number].lobby_message_title}\n{Lobbies[lobby_number].sapphire_name}\n"
                     f"{Lobbies[lobby_number].amber_name}\n{Lobbies[lobby_number].either_name}\n{Lobbies[lobby_number].lobby_threshold}\n"
-                    f"{Lobbies[lobby_number].lobby_cooldown}\n{Lobbies[lobby_number].enable_hero_draft}\n")
+                    f"{Lobbies[lobby_number].lobby_cooldown}\n{Lobbies[lobby_number].enable_hero_draft}\n{Lobbies[lobby_number].enable_image_send}")
 
     embed.add_field(name='Setting', value=setting_string, inline=True)
     embed.add_field(name='Value', value=value_string, inline=True)
@@ -752,18 +760,24 @@ async def send_lobby_info(lobby_number):
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
     for player in Lobbies[lobby_number].sapp_players:
         with open("config/banner_sapp.png", "rb") as bansa:
-            banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
             embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
             embed.add_field(name='Connect info', value=connect_string, inline=False)
             embed.add_field(name='Password', value=Lobbies[lobby_number].password, inline=False)
-        await player.send(embed=embed, file=banner_sapp)
+            if distutils.util.strtobool(Lobbies[lobby_number].enable_image_send):
+                file = discord.File(bansa, filename="config/banner_sapp.png")
+            else:
+                file = None
+        await player.send(embed=embed, file=file)
     for player in Lobbies[lobby_number].ambr_players:
         with open("config/banner_ambr.png", "rb") as banam:
-            banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
             embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].amber_name}",color=int("FFBF00", 16))
             embed.add_field(name='Connect info', value=connect_string, inline=False)
             embed.add_field(name='Password', value=Lobbies[lobby_number].password, inline=False)
-        await player.send(embed=embed, file=banner_ambr)
+            if distutils.util.strtobool(Lobbies[lobby_number].enable_image_send):
+                file = discord.File(banam, filename="config/banner_sapp.png")
+            else:
+                file = None
+        await player.send(embed=embed, file=file)
 
 
 async def update_all_lobby_messages():
@@ -896,6 +910,7 @@ async def send_default_config(user):
                     f'AmberTeamName: {AmberTeamName}\n'
                     f'EitherTeamName: {EitherTeamName}\n'
                     f'EnableHeroDraft: {EnableHeroDraft}\n'
+                    f'EnableImageSend: {EnableImageSend}\n'
                     f'Heroes: {heroes_string}\n'
                     f'Presets will override the above settings\n'
                     f'Available presets: {presets_string}')
@@ -1063,6 +1078,12 @@ class SettingModal(discord.ui.Modal):
                 await update_message(lobby_number)
                 await update_admin_panel(lobby_number)
                 return
+        elif Lobbies[lobby_number].selected_setting == "EnableImageSend":
+            Lobbies[lobby_number].enable_image_send = value
+            await interaction.response.send_message(f"Lobby {lobby_number} EnableImageSend changed to {Lobbies[lobby_number].enable_image_send}", ephemeral=True)
+            await update_message(lobby_number)
+            await update_admin_panel(lobby_number)
+            return
         else:
             await interaction.response.send_message(f"Setting not found!", ephemeral=True)
 
@@ -1135,7 +1156,6 @@ class LobbyButtons(discord.ui.View):
             Lobbies[lobby_number].ambr_players.append(interactor)
             await interaction.response.send_message(f"Added to {Lobbies[lobby_number].amber_name}", ephemeral=True)
             await update_message(lobby_number)
-
 
     @discord.ui.button(label="Either", style=discord.ButtonStyle.green)
     async def fill_button_callback(self, button, interaction):
@@ -1340,7 +1360,11 @@ class AdminButtons(discord.ui.View):
                            ),
                            discord.SelectOption(
                                label="EnableHeroDraft",
-                               description="When true, teams will draft heros when lobby is full"
+                               description="When true teams will draft heros when lobby is full"
+                           ),
+                           discord.SelectOption(
+                               label="EnableImageSend",
+                               description="When true will send an image to players with lobby connect info"
                            )
                        ]
                        )

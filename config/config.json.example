@@ -17,4 +17,5 @@
     "AmberTeamName": "THE AMPER SAND",
     "EitherTeamName": "EITHER",
     "EnableHeroDraft": "True"
+    "EnableImageSend": "False"
 }
