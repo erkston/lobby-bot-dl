@@ -50,7 +50,6 @@ def load_bans():
     Bans = []
     with open("bans.json", "r") as bansjsonfile:
         JSONBans = json.load(bansjsonfile)
-    i = 0
     for ban in JSONBans:
         Bans.append([ban[0], ban[1], ban[2]])
 
@@ -69,7 +68,6 @@ def load_presets():
 def load_heroes():
     global Heroes, heroes_string
     Heroes = []
-    heroes_string = ""
     with open("config/heroes.json", "r") as heroesjsonfile:
         heroesjson = json.load(heroesjsonfile)
     Heroes = heroesjson['Heroes']
@@ -224,8 +222,8 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
 
         elif command.casefold() == "reloadheroes":
             load_heroes()
-            await ctx.respond(f'Heroes reloaded. Available presets: {heroes_string}', ephemeral=True)
-            print(f'{ctx.author.display_name} reloaded heroes. Available presets: {heroes_string}')
+            await ctx.respond(f'Heroes reloaded. Available heroes: {heroes_string}', ephemeral=True)
+            print(f'{ctx.author.display_name} reloaded heroes. Available heroes: {heroes_string}')
 
         else:
             await ctx.respond(f'Command not found', ephemeral=True)
@@ -301,7 +299,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
                 tempconfig = json.load(presetjsonfile)
                 Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [],
-                                             [], [], [], [], Heroes, [], 0,
+                                             [], [], [], [], Heroes[:], [], 0,
                                              0, 0, discord.User, "hero", 0, 0,
                                              temp_lobby_role, tempconfig['LobbyRolePing'], tempconfig['LobbyAutoLaunch'],
                                              tempconfig['LobbyAutoReset'], tempconfig['LobbyMessageTitle'], tempconfig['LobbyMessageColor'],
@@ -312,7 +310,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         else:
             global LobbyAutoReset, LobbyMessageTitle, LobbyMessageColor, ActiveMessageColor, LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName, EnableHeroDraft
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, preset, [], [],
-                                         [], [], [], Heroes, [], 0, 0, 0, discord.User,
+                                         [], [], [], Heroes[:], [], 0, 0, 0, discord.User,
                                          "hero", 0, 0, lobby_role, LobbyRolePing, LobbyAutoLaunch, LobbyAutoReset, LobbyMessageTitle,
                                          LobbyMessageColor, ActiveMessageColor, LobbyThreshold,LobbyCooldown, SapphireTeamName, AmberTeamName, EitherTeamName,
                                          0, "none", EnableHeroDraft, discord.Message))
@@ -466,20 +464,16 @@ async def update_message(lobby_number):
     sapp_players = []
     ambr_players = []
     fill_players = []
-    i = 0
-    while i < len(Lobbies[lobby_number].sapp_players):
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
         if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
             sapp_players.append(str(Lobbies[lobby_number].sapp_players[i].display_name) + " - " + Lobbies[lobby_number].sapp_heroes[i])
         else:
             sapp_players.append(str(Lobbies[lobby_number].sapp_players[i].display_name))
-        i += 1
-    i = 0
-    while i < len(Lobbies[lobby_number].ambr_players):
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
         if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
             ambr_players.append(str(Lobbies[lobby_number].ambr_players[i].display_name) + " - " + Lobbies[lobby_number].ambr_heroes[i])
         else:
             ambr_players.append(str(Lobbies[lobby_number].ambr_players[i].display_name))
-        i += 1
 
     for player in Lobbies[lobby_number].fill_players:
         fill_players.append(str(player.display_name))
@@ -622,36 +616,20 @@ async def draft_heroes(lobby_number):
         Lobbies[lobby_number].sapp_heroes.clear()
         Lobbies[lobby_number].ambr_heroes.clear()
         Lobbies[lobby_number].picked_heroes.clear()
-        i = 0
-        while i < len(Lobbies[lobby_number].sapp_players):
+        for i in range(len(Lobbies[lobby_number].sapp_players)):
             Lobbies[lobby_number].sapp_heroes.append("not drafted")
             Lobbies[lobby_number].ambr_heroes.append("not drafted")
-            i += 1
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
-        i = 0
-        while i < len(Lobbies[lobby_number].sapp_players):
-            Lobbies[lobby_number].waiting_for_pick = 1
-            Lobbies[lobby_number].drafter = Lobbies[lobby_number].sapp_players[i]
-            await update_message(lobby_number)
-            await get_player_pick(lobby_number, Lobbies[lobby_number].sapp_players[i])
-            while Lobbies[lobby_number].waiting_for_pick:
-                await asyncio.sleep(1)
-            Lobbies[lobby_number].sapp_heroes[i] = Lobbies[lobby_number].selected_hero
-            Lobbies[lobby_number].picked_heroes.append(Lobbies[lobby_number].selected_hero)
-            await remove_selected_hero(lobby_number)
-            await update_message(lobby_number)
-            Lobbies[lobby_number].waiting_for_pick = 1
-            Lobbies[lobby_number].drafter = Lobbies[lobby_number].ambr_players[i]
-            await update_message(lobby_number)
-            await get_player_pick(lobby_number, Lobbies[lobby_number].ambr_players[i])
-            while Lobbies[lobby_number].waiting_for_pick:
-                await asyncio.sleep(1)
-            Lobbies[lobby_number].ambr_heroes[i] = Lobbies[lobby_number].selected_hero
-            Lobbies[lobby_number].picked_heroes.append(Lobbies[lobby_number].selected_hero)
-            await remove_selected_hero(lobby_number)
-            await update_message(lobby_number)
-            i += 1
+        team_size = int(Lobbies[lobby_number].lobby_threshold)/2
+        first_pick = random.choice(["sapp", "ambr"])
+        for i in range(int(team_size)):
+            if first_pick == "sapp":
+                await start_player_pick(lobby_number, "sapp", i)
+                await start_player_pick(lobby_number, "ambr", i)
+            else:
+                await start_player_pick(lobby_number, "ambr", i)
+                await start_player_pick(lobby_number, "sapp", i)
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             Lobbies[lobby_number].drafting_heroes = 0
             Lobbies[lobby_number].hero_draft_completed = 1
@@ -664,6 +642,32 @@ async def draft_heroes(lobby_number):
             await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} hero draft is complete and waiting for you to launch the lobby (Click Proceed)")
 
 
+async def start_player_pick(lobby_number, team, index):
+    if team == "sapp":
+        Lobbies[lobby_number].waiting_for_pick = 1
+        Lobbies[lobby_number].drafter = Lobbies[lobby_number].sapp_players[index]
+        await update_message(lobby_number)
+        await get_player_pick(lobby_number, Lobbies[lobby_number].sapp_players[index])
+        while Lobbies[lobby_number].waiting_for_pick:
+            await asyncio.sleep(1)
+        Lobbies[lobby_number].sapp_heroes[index] = Lobbies[lobby_number].selected_hero
+        Lobbies[lobby_number].picked_heroes.append(Lobbies[lobby_number].selected_hero)
+        await remove_selected_hero(lobby_number)
+        await update_message(lobby_number)
+        return
+    else:
+        Lobbies[lobby_number].waiting_for_pick = 1
+        Lobbies[lobby_number].drafter = Lobbies[lobby_number].ambr_players[index]
+        await update_message(lobby_number)
+        await get_player_pick(lobby_number, Lobbies[lobby_number].ambr_players[index])
+        while Lobbies[lobby_number].waiting_for_pick:
+            await asyncio.sleep(1)
+        Lobbies[lobby_number].ambr_heroes[index] = Lobbies[lobby_number].selected_hero
+        Lobbies[lobby_number].picked_heroes.append(Lobbies[lobby_number].selected_hero)
+        await remove_selected_hero(lobby_number)
+        await update_message(lobby_number)
+
+
 async def get_player_pick(lobby_number, player):
     Lobbies[lobby_number].selected_hero = ""
     picked_heroes_string = ", ".join(Lobbies[lobby_number].picked_heroes)
@@ -674,33 +678,26 @@ async def get_player_pick(lobby_number, player):
 
 
 async def remove_selected_hero(lobby_number):
-    i = 0
-    while i < len(Lobbies[lobby_number].available_heroes):
+    for i in range(len(Lobbies[lobby_number].available_heroes)):
         if Lobbies[lobby_number].available_heroes[i] == Lobbies[lobby_number].selected_hero:
-            del Lobbies[lobby_number].available_heroes[i]
-        i += 1
+            Lobbies[lobby_number].available_heroes.pop(i)
+            return
 
 
 async def get_lobby_number(interaction):
     global Lobbies
-    i = 0
-    while i < len(Lobbies):
+    for i in range (len(Lobbies)):
         if interaction.message.id == Lobbies[i].message_id:
             lobby_number = Lobbies[i].number
             print(f'lobby{lobby_number}: Received lobby button press from {interaction.user.display_name}')
-        i += 1
-    i = 0
-    while i < len(Lobbies):
+    for i in range(len(Lobbies)):
         if interaction.message.id == Lobbies[i].admin_msg_id:
             lobby_number = Lobbies[i].number
             print(f'lobby{lobby_number}: Received admin button press from {interaction.user.display_name}')
-        i += 1
-    i = 0
-    while i < len(Lobbies):
+    for i in range(len(Lobbies)):
         if interaction.message.id == Lobbies[i].draft_msg.id:
             lobby_number = Lobbies[i].number
             print(f'lobby{lobby_number}: Received draft button press from {interaction.user.display_name}')
-        i += 1
     return lobby_number
 
 
@@ -752,11 +749,9 @@ async def send_lobby_info(lobby_number):
 
 
 async def update_all_lobby_messages():
-    lobby_number = 1
-    while lobby_number < len(Lobbies):
-        if not await is_message_deleted(lobby_channel, Lobbies[lobby_number].message_id):
-            await update_message(lobby_number)
-            lobby_number += 1
+    for i in range(1, len(Lobbies)):
+        if not await is_message_deleted(lobby_channel, Lobbies[i].message_id):
+            await update_message(i)
 
 
 async def size_lobby(lobby_number):
@@ -769,10 +764,10 @@ async def size_lobby(lobby_number):
     pop_index = int(team_size) - 1
     while len(Lobbies[lobby_number].sapp_players) > team_size:
         print(f'lobby{lobby_number}: {Lobbies[lobby_number].sapphire_name} too big, player {Lobbies[lobby_number].sapp_players[pop_index].display_name} kicked')
-        del Lobbies[lobby_number].sapp_players[pop_index]
+        Lobbies[lobby_number].sapp_players.pop(pop_index)
     while len(Lobbies[lobby_number].ambr_players) > team_size:
         print(f'lobby{lobby_number}: {Lobbies[lobby_number].amber_name} too big, player {Lobbies[lobby_number].ambr_players[pop_index].display_name} kicked')
-        del Lobbies[lobby_number].ambr_players[pop_index]
+        Lobbies[lobby_number].ambr_players.pop(pop_index)
 
 
 async def reset_lobby(lobby_number):
@@ -789,7 +784,7 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].sapp_heroes.clear()
     Lobbies[lobby_number].ambr_heroes.clear()
     Lobbies[lobby_number].picked_heroes.clear()
-    Lobbies[lobby_number].available_heroes = Heroes
+    Lobbies[lobby_number].available_heroes = Heroes[:]
     await update_message(lobby_number)
     await update_admin_panel(lobby_number)
     await bot.change_presence(status=discord.Status.online,
@@ -810,30 +805,24 @@ async def kick_player(lobby_number, user_id):
     if Lobbies[lobby_number].launched:
         return 0
     player = bot_guild.get_member(int(f"{user_id}"))
-    i = 0
-    while i < len(Lobbies[lobby_number].sapp_players):
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
         if Lobbies[lobby_number].sapp_players[i].id == player.id:
             Lobbies[lobby_number].sapp_players.pop(i)
             await update_message(lobby_number)
             print(f'lobby{lobby_number}: Player {player.display_name} kicked')
             return 1
-        i += 1
-    i = 0
-    while i < len(Lobbies[lobby_number].ambr_players):
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
         if Lobbies[lobby_number].ambr_players[i].id == player.id:
             Lobbies[lobby_number].ambr_players.pop(i)
             await update_message(lobby_number)
             print(f'lobby{lobby_number}: Player {player.display_name} kicked')
             return 1
-        i += 1
-    i = 0
-    while i < len(Lobbies[lobby_number].fill_players):
+    for i in range(len(Lobbies[lobby_number].fill_players)):
         if Lobbies[lobby_number].fill_players[i].id == player.id:
             Lobbies[lobby_number].fill_players.pop(i)
             await update_message(lobby_number)
             print(f'lobby{lobby_number}: Player {player.display_name} kicked')
             return 1
-        i += 1
     return 0
 
 
@@ -846,10 +835,8 @@ async def banunban_player(player):
             await write_bans_to_file()
             return 0
         i += 1
-    i = 1
-    while i < len(Lobbies):
+    for i in range(1, len(Lobbies)):
         await kick_player(i, player.id)
-        i += 1
     Bans.append([player.display_name, player.name, player.id])
     print(f'Player {player.display_name} banned')
     await write_bans_to_file()
@@ -1079,13 +1066,11 @@ class LobbyButtons(discord.ui.View):
             await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
             return
 
-        i = 0
         interactor_already_here = False
-        while i < len(Lobbies[lobby_number].sapp_players):
+        for i in range(len(Lobbies[lobby_number].sapp_players)):
             if interactor.id == Lobbies[lobby_number].sapp_players[i].id:
                 interactor_already_here = True
-                del Lobbies[lobby_number].sapp_players[i]
-            i += 1
+                Lobbies[lobby_number].sapp_players.pop(i)
         if interactor_already_here:
             await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
             await update_message(lobby_number)
@@ -1115,13 +1100,11 @@ class LobbyButtons(discord.ui.View):
             await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
             return
 
-        i = 0
         interactor_already_here = False
-        while i < len(Lobbies[lobby_number].ambr_players):
+        for i in range(len(Lobbies[lobby_number].ambr_players)):
             if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
                 interactor_already_here = True
-                del Lobbies[lobby_number].ambr_players[i]
-            i += 1
+                Lobbies[lobby_number].ambr_players.pop(i)
         if interactor_already_here:
             await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
             await update_message(lobby_number)
@@ -1134,14 +1117,7 @@ class LobbyButtons(discord.ui.View):
             Lobbies[lobby_number].ambr_players.append(interactor)
             await interaction.response.send_message(f"Added to {Lobbies[lobby_number].amber_name}", ephemeral=True)
             await update_message(lobby_number)
-        else:
-            i = 0
-            while i < len(Lobbies[lobby_number].ambr_players):
-                if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
-                    del Lobbies[lobby_number].ambr_players[i]
-                i += 1
-            await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
-            await update_message(lobby_number)
+
 
     @discord.ui.button(label="Either", style=discord.ButtonStyle.green)
     async def fill_button_callback(self, button, interaction):
@@ -1163,11 +1139,9 @@ class LobbyButtons(discord.ui.View):
             await interaction.response.send_message(f"Added to fill", ephemeral=True)
             await update_message(lobby_number)
         else:
-            i = 0
-            while i < len(Lobbies[lobby_number].fill_players):
+            for i in range(len(Lobbies[lobby_number].fill_players)):
                 if interactor.id == Lobbies[lobby_number].fill_players[i].id:
                     del Lobbies[lobby_number].fill_players[i]
-                i += 1
             await interaction.response.send_message(f"Removed from fill", ephemeral=True)
             await update_message(lobby_number)
 
@@ -1209,20 +1183,16 @@ class LeaveButton(discord.ui.View):
         interactor = interaction.user
         print(f'lobby{lobby_number}: Received leave command from {interaction.user.display_name}')
         if interactor in Lobbies[lobby_number].sapp_players:
-            i = 0
-            while i < len(Lobbies[lobby_number].sapp_players):
+            for i in range(len(Lobbies[lobby_number].sapp_players)):
                 if interactor.id == Lobbies[lobby_number].sapp_players[i].id:
-                    del Lobbies[lobby_number].sapp_players[i]
-                i += 1
+                    Lobbies[lobby_number].sapp_players.pop(i)
             await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
             await update_message(lobby_number)
             return
         elif interactor in Lobbies[lobby_number].ambr_players:
-            i = 0
-            while i < len(Lobbies[lobby_number].ambr_players):
+            for i in range(len(Lobbies[lobby_number].ambr_players)):
                 if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
-                    del Lobbies[lobby_number].ambr_players[i]
-                i += 1
+                    Lobbies[lobby_number].ambr_players.pop(i)
             await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
             await update_message(lobby_number)
             return
@@ -1387,12 +1357,10 @@ class AdminButtons(discord.ui.View):
     async def heroes_button_callback(self, button, interaction):
         print(f'Received reload heroes command from {interaction.user.display_name}')
         load_heroes()
-        lobby_number = 1
-        while lobby_number < len(Lobbies):
-            if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].launched:
-                Lobbies[lobby_number].available_heroes = Heroes
-                lobby_number += 1
-        await interaction.response.send_message(f"Heroes reloaded. Available presets: {heroes_string}", ephemeral=True)
+        for i in range(1, len(Lobbies)):
+            if not Lobbies[i].drafting_heroes and not Lobbies[i].hero_draft_completed and not Lobbies[i].launched:
+                Lobbies[i].available_heroes = Heroes[:]
+        await interaction.response.send_message(f"Heroes reloaded. Available heroes: {heroes_string}", ephemeral=True)
 
 
 bot.run(DiscordBotToken)
