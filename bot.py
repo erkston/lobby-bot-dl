@@ -42,7 +42,7 @@ LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
 lbsetCommandList = ["BotGame", "LobbyAutoReset", "LobbyRolePing", "LobbyAutoLaunch", "LobbyMessageTitle", "LobbyMessageColor", "ActiveMessageColor",
                     "LobbyThreshold", "LobbyCooldown", "SapphireTeamName", "AmberTeamName", "EitherTeamName", "EnableHeroDraft"]
-lbcomCommandList = ["GetCfg", "ReloadPresets"]
+lbcomCommandList = ["GetCfg", "ReloadPresets", "ReloadHeroes"]
 
 
 def load_bans():
@@ -221,6 +221,11 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
             load_presets()
             await ctx.respond(f'Presets reloaded. Available presets: {presets_string}', ephemeral=True)
             print(f'{ctx.author.display_name} reloaded presets. Available presets: {presets_string}')
+
+        elif command.casefold() == "reloadheroes":
+            load_heroes()
+            await ctx.respond(f'Heroes reloaded. Available presets: {heroes_string}', ephemeral=True)
+            print(f'{ctx.author.display_name} reloaded heroes. Available presets: {heroes_string}')
 
         else:
             await ctx.respond(f'Command not found', ephemeral=True)
@@ -1377,6 +1382,17 @@ class AdminButtons(discord.ui.View):
         print(f'Received reload presets command from {interaction.user.display_name}')
         load_presets()
         await interaction.response.send_message(f"Presets reloaded. Available presets: {presets_string}", ephemeral=True)
+
+    @discord.ui.button(label="Reload Heroes", style=discord.ButtonStyle.secondary, row=4)
+    async def heroes_button_callback(self, button, interaction):
+        print(f'Received reload heroes command from {interaction.user.display_name}')
+        load_heroes()
+        lobby_number = 1
+        while lobby_number < len(Lobbies):
+            if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].launched:
+                Lobbies[lobby_number].available_heroes = Heroes
+                lobby_number += 1
+        await interaction.response.send_message(f"Heroes reloaded. Available presets: {heroes_string}", ephemeral=True)
 
 
 bot.run(DiscordBotToken)

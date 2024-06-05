@@ -119,6 +119,8 @@ Depending on the current state of the lobby and which setting you are changing i
 
 - ```/lbcom ReloadPresets```
   - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
+- ```/lbcom ReloadHeroes```
+  - Reloads heroes from config/heroes.json. Will apply to any open lobbies
 - ```/lbcom GetCfg```
   -  Sends you a DM with most of the current default configuration settings
 - ```/lbban USERID```
