@@ -647,7 +647,7 @@ async def start_player_pick(lobby_number, team, index):
         Lobbies[lobby_number].waiting_for_pick = 1
         Lobbies[lobby_number].drafter = Lobbies[lobby_number].sapp_players[index]
         await update_message(lobby_number)
-        await get_player_pick(lobby_number, Lobbies[lobby_number].sapp_players[index])
+        await get_player_pick(lobby_number, Lobbies[lobby_number].sapp_players[index], team)
         while Lobbies[lobby_number].waiting_for_pick:
             await asyncio.sleep(1)
         Lobbies[lobby_number].sapp_heroes[index] = Lobbies[lobby_number].selected_hero
@@ -659,7 +659,7 @@ async def start_player_pick(lobby_number, team, index):
         Lobbies[lobby_number].waiting_for_pick = 1
         Lobbies[lobby_number].drafter = Lobbies[lobby_number].ambr_players[index]
         await update_message(lobby_number)
-        await get_player_pick(lobby_number, Lobbies[lobby_number].ambr_players[index])
+        await get_player_pick(lobby_number, Lobbies[lobby_number].ambr_players[index], team)
         while Lobbies[lobby_number].waiting_for_pick:
             await asyncio.sleep(1)
         Lobbies[lobby_number].ambr_heroes[index] = Lobbies[lobby_number].selected_hero
@@ -668,12 +668,24 @@ async def start_player_pick(lobby_number, team, index):
         await update_message(lobby_number)
 
 
-async def get_player_pick(lobby_number, player):
-    Lobbies[lobby_number].selected_hero = ""
-    picked_heroes_string = ", ".join(Lobbies[lobby_number].picked_heroes)
-    if not picked_heroes_string:
-        picked_heroes_string = "None"
-    draft_msg = await player.send(f"Please select a hero\nHeroes already picked:\n{picked_heroes_string}", view=HeroSelect(Lobbies[lobby_number].available_heroes))
+async def get_player_pick(lobby_number, player, team):
+    sapp_players = []
+    ambr_players = []
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
+        sapp_players.append(str(Lobbies[lobby_number].sapp_players[i].display_name) + " - " + Lobbies[lobby_number].sapp_heroes[i])
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
+        ambr_players.append(str(Lobbies[lobby_number].ambr_players[i].display_name) + " - " + Lobbies[lobby_number].ambr_heroes[i])
+    sapp_players_string = "\n".join(sapp_players)
+    ambr_players_string = "\n".join(ambr_players)
+    if team == "sapp":
+        embed = discord.Embed(title=f"It's your turn to pick! You are on {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
+    else:
+        embed = discord.Embed(title=f"It's your turn to pick! You are on {Lobbies[lobby_number].amber_name}",
+                              color=int("FFBF00", 16))
+    embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
+    embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
+
+    draft_msg = await player.send(embed=embed, view=HeroSelect(Lobbies[lobby_number].available_heroes))
     Lobbies[lobby_number].draft_msg = draft_msg
 
 
@@ -741,11 +753,17 @@ async def send_lobby_info(lobby_number):
     for player in Lobbies[lobby_number].sapp_players:
         with open("config/banner_sapp.png", "rb") as bansa:
             banner_sapp = discord.File(bansa, filename="config/banner_sapp.png")
-        await player.send(f"\nYou are on team {Lobbies[lobby_number].sapphire_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_sapp)
+            embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
+            embed.add_field(name='Connect info', value=connect_string, inline=False)
+            embed.add_field(name='Password', value=Lobbies[lobby_number].password, inline=False)
+        await player.send(embed=embed, file=banner_sapp)
     for player in Lobbies[lobby_number].ambr_players:
         with open("config/banner_ambr.png", "rb") as banam:
             banner_ambr = discord.File(banam, filename="config/banner_sapp.png")
-        await player.send(f"\nYou are on team {Lobbies[lobby_number].amber_name}\n{connect_string}\nPassword: {Lobbies[lobby_number].password}", file=banner_ambr)
+            embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].amber_name}",color=int("FFBF00", 16))
+            embed.add_field(name='Connect info', value=connect_string, inline=False)
+            embed.add_field(name='Password', value=Lobbies[lobby_number].password, inline=False)
+        await player.send(embed=embed, file=banner_ambr)
 
 
 async def update_all_lobby_messages():
@@ -1167,7 +1185,8 @@ class HeroSelect(discord.ui.View):
             if picked_hero not in Lobbies[lobby_number].picked_heroes:
                 Lobbies[lobby_number].selected_hero = picked_hero
                 print(f"lobby{lobby_number}: Hero {Lobbies[lobby_number].selected_hero} has been picked")
-                await Lobbies[lobby_number].draft_msg.edit(f"You have selected {Lobbies[lobby_number].selected_hero}", view=None)
+                embed = discord.Embed(title=f"You have selected {Lobbies[lobby_number].selected_hero}", color=int("808080", 16))
+                await Lobbies[lobby_number].draft_msg.edit(embed=embed, view=None)
                 await interaction.response.defer()
                 Lobbies[lobby_number].waiting_for_pick = 0
             else:
