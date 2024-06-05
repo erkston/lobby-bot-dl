@@ -1341,12 +1341,6 @@ class AdminButtons(discord.ui.View):
         else:
             await interaction.response.send_modal(SettingModal(title=f"Change {Lobbies[lobby_number].selected_setting} Setting"))
 
-    @discord.ui.button(label="Get default cfg", style=discord.ButtonStyle.secondary, row=4)
-    async def cfgread_button_callback(self, button, interaction):
-        print(f'Received cfg readout command from {interaction.user.display_name}')
-        await send_default_config(interaction.user)
-        await interaction.response.defer()
-
     @discord.ui.button(label="Reload Presets", style=discord.ButtonStyle.secondary, row=4)
     async def preset_button_callback(self, button, interaction):
         print(f'Received reload presets command from {interaction.user.display_name}')
