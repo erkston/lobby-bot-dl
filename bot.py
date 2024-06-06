@@ -161,15 +161,27 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             LobbyRole = preset['LobbyRole']
             for guild in bot.guilds:
                 for role in guild.roles:
-                    if role.name == LobbyRole:
-                        lobby_role = role
-                        print(f'lobby{lobby_number}: Lobby Role found: "{lobby_role.name}"')
+                    try:
+                        int_role = int(LobbyRole)
+                        if role.id == int_role:
+                            lobby_role = role
+                            print(f'lobby{lobby_number}: Lobby Role found: "{lobby_role.name}"')
+                    except ValueError:
+                        if role.name == LobbyRole:
+                            lobby_role = role
+                            print(f'lobby{lobby_number}: Lobby Role found: "{lobby_role.name}"')
             LobbyChannel = preset['LobbyChannel']
             for guild in bot.guilds:
                 for channel in guild.channels:
-                    if channel.name == LobbyChannel:
-                        lobby_channel = channel
-                        print(f'lobby{lobby_number}: Lobby channel found #{lobby_channel.name}')
+                    try:
+                        int_chan = int(LobbyChannel)
+                        if channel.id == int_chan:
+                            lobby_channel = channel
+                            print(f'lobby{lobby_number}: Lobby channel found #{lobby_channel.name}')
+                    except ValueError:
+                        if channel.name == LobbyChannel:
+                            lobby_channel = channel
+                            print(f'lobby{lobby_number}: Lobby channel found #{lobby_channel.name}')
         lobby_message = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(preset['LobbyRolePing']), lobby_channel)
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
 
@@ -218,10 +230,15 @@ async def on_ready():
     global bot_admin_role
     for guild in bot.guilds:
         for role in guild.roles:
-            if role.name == BotAdminRole:
-                bot_admin_role = role
-                print(f'Bot Admin Role found: "{bot_admin_role.name}"')
-
+            try:
+                int_role = int(BotAdminRole)
+                if role.id == int_role:
+                    bot_admin_role = role
+                    print(f'Bot Admin Role found: "{bot_admin_role.name}"')
+            except ValueError:
+                if role.name == BotAdminRole:
+                    bot_admin_role = role
+                    print(f'Bot Admin Role found: "{bot_admin_role.name}"')
     Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
                                  "preset", [], [], [], [], [], [], [],
                                  0,  0,  0, discord.User, "none",
