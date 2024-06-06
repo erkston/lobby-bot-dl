@@ -2,20 +2,5 @@
     "DiscordBotToken": "YOUR_BOT_TOKEN",
     "BotTimezone": "Europe/Vienna",
     "BotGame": "a fun game :)",
-    "BotAdminRole": "Lobby Bot Admin",
-    "LobbyChannelName": "game-lobbies",
-    "LobbyRole": "pugs",
-    "LobbyRolePing": "True",
-    "LobbyAutoLaunch": "False",
-    "LobbyAutoReset": "True",
-    "LobbyMessageTitle": "My Lobby!",
-    "LobbyMessageColor": "388727",
-    "ActiveMessageColor": "715814",
-    "LobbyThreshold": "12",
-    "LobbyCooldown": "1h",
-    "SapphireTeamName": "THE SATIRE NAME",
-    "AmberTeamName": "THE AMPER SAND",
-    "EitherTeamName": "EITHER",
-    "EnableHeroDraft": "True"
-    "EnableImageSend": "False"
+    "BotAdminRole": "Lobby Bot Admin"
 }

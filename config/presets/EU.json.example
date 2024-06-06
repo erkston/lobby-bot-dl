@@ -1,16 +1,17 @@
 {
     "LobbyRole": "EU-pug",
     "LobbyRolePing": "True",
+    "LobbyChannel": "lobby-bot",
     "LobbyAutoLaunch": "False",
     "LobbyAutoReset": "True",
-    "LobbyMessageTitle": "\uD83C\uDDEA\uD83C\uDDFA EU Playtest \uD83C\uDDEA\uD83C\uDDFA",
+    "LobbyMessageTitle": "\uD83C\uDDEA\uD83C\uDDFA EU PUG \uD83C\uDDEA\uD83C\uDDFA",
     "LobbyMessageColor": "001489",
     "ActiveMessageColor": "FFDD00",
     "LobbyThreshold": "12",
     "LobbyCooldown": "75m",
-    "SapphireTeamName": "EUROPEAN",
-    "AmberTeamName": "UNION",
-    "EitherTeamName": "UK",
+    "SapphireTeamName": "West",
+    "AmberTeamName": "East",
+    "EitherTeamName": "Iron Curtain",
     "EnableHeroDraft": "True",
     "EnableImageSend": "False"
 }

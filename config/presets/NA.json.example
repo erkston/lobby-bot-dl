@@ -1,16 +1,17 @@
 {
     "LobbyRole": "NA-pug",
     "LobbyRolePing": "True",
+    "LobbyChannel": "lobby-bot",
     "LobbyAutoLaunch": "False",
     "LobbyAutoReset": "True",
-    "LobbyMessageTitle": "\uD83C\uDDFA\uD83C\uDDF8 NA Playtest \uD83C\uDDFA\uD83C\uDDF8",
+    "LobbyMessageTitle": "\uD83C\uDDFA\uD83C\uDDF8 NA PUG \uD83C\uDDFA\uD83C\uDDF8",
     "LobbyMessageColor": "B31942",
     "ActiveMessageColor": "0A3161",
     "LobbyThreshold": "12",
     "LobbyCooldown": "75m",
-    "SapphireTeamName": "GEORGE WASHINGTON",
-    "AmberTeamName": "ABE LINCOLN",
-    "EitherTeamName": "EITHER",
+    "SapphireTeamName": "Coke",
+    "AmberTeamName": "Pop",
+    "EitherTeamName": "Soda",
     "EnableHeroDraft": "True",
     "EnableImageSend": "False"
 }
