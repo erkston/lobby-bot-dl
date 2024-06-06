@@ -27,13 +27,13 @@ Hero draft:
 
 Admin panel:
 
-![Admin Panel](https://i.imgur.com/nS9PJg1.png)
+![Admin Panel](https://i.imgur.com/h18YMQV.png)
 
 ### Usage
 
 Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET```
 
-![startlobby command](https://i.imgur.com/FFCDylQ.png)
+![startlobby command](https://i.imgur.com/MFh1dV4.png)
 
 The Preset field is case sensitive, the command discription will tell you what presets are available.
 If no presets are added to the /config/presets/ folder, default will be the only available selection.
@@ -62,67 +62,48 @@ Select what variable you want to change, then hit the Change Setting button. A w
 
 ![Setting Modal](https://i.imgur.com/fSrP4vR.png)
 
-Any settings changed this way are only for that single lobby and will not change any of the default or preset settings.
+Any settings changed this way are only for that single lobby and will not change the settings in the preset .json files.
 
 The last two buttons:
-- Get default cfg - Sends you a DM with the current default configuration. This will reflect any changes made with /lbset since the bot was started
 - Reload Presets - Loads all preset .json files in config/presets/. Useful if you want to create new configs without restarting the bot completely
+- Reload Heroes - Reloads heroes from config/heroes.json
 
 ### Discord set-up
 The bot requires the following permissions: Send Messages, Manage Messages, Embed Links. It also requires the "Members" Privileged Gateway Intent, permission to mention roles, and the ability to mention those roles in server settings.
 The server should have a dedicated channel so the lobby is always visible at the bottom of a channel (see config below)
 
 ### Configuration
-Copy config/config_example.json to config/config.json and edit accordingly. 
+Copy config/config_example.json to config/config.json and edit accordingly. This is for your Discord Bot Token and a few other bot-wide settings.
 
-config.json (along with any changes made via /lbset command) is the 'default' preset that is selected in the /startlobby command.
-Any additional presets added (config/presets/NA.json, config/presets/EU.json, etc) are independent and do not affect the default config.
-These templates are loaded at /startlobby command execution, so it's possible to edit the configs while the bot is still running.
+To start a lobby you must make at least one "preset" config, examples are in config/presets/. These house the lobby-specific settings.
 
-Settings:
+Heroes are configured in config/heroes.json but are limited to 25. You can also change the images the bot sends with EnableImageSend by editing config/banner_ambr.png and config/banner_sapp.png
+
+Bot Settings (config/config.json):
 - DiscordBotToken - Your bots token from the Discord Developer Portal
 - BotTimezone - Timezone used for timestamps in console output. Will use this timezone instead of system time
-- BotGame* - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
+- BotGame - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
 - BotAdminRole - Name of the role whose members can use /startlobby and /lbset
-- LobbyChannelName - The Channel name the bot should use to send messages
-- LobbyRole - Name of the role the bot will @mention when @LobbyRolePing is set to True
-- LobbyRolePing* - When True the bot will send a @mention of LobbyRole when a new lobby is opened
-- LobbyAutoLaunch* - When True will automatically send connect info to lobby members. When False it will wait for the Admin to press the Launch button on the Admin Panel.
-- LobbyAutoReset* - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely. Note that using the Admin Panel reset button will ignore this setting.
-- LobbyMessageTitle* - Title of the discord message showing the lobby information
-- LobbyMessageColor* and ActiveMessageColor* - Hex values used for the discord embed messages
-- LobbyThreshold* - The number of players required to launch the lobby. Total number of players (two teams and "either"). Should be even.
-- LobbyCooldown* - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc). Note that using the Admin Panel reset button will force the bot to do nothing when the cooldown has passed (lobby can be reset manually via Admin Panel)
-- SapphireTeamName*, AmberTeamName*, and EitherTeamName - The team names for the lobby (left, right, and fill teams respectively)
-- EnableHeroDraft* - Enables hero draft once the lobby fills up. Heroes are set in config/heroes.json but limited to 25. Heroes are set at bot start and can't be reloaded while running
+Preset Settings (config/presets/*.json):
+- LobbyRole - Name of the role the bot will @mention when LobbyRolePing is set to True
+- LobbyRolePing - When True the bot will send a @mention of LobbyRole when a new lobby is opened
+- LobbyChannelName - The Channel name where the bot will put its lobby messages
+- LobbyAutoLaunch - When True will automatically start hero draft (if enabled) and send connect info to players. When False it will wait for the Admin to press the Proceed button on the Admin Panel. Setting this False allows time to shuffle teams, make sure the server is set up, etc.
+- LobbyAutoReset - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely. Note that using the Admin Panel reset button will cause future possible resets to ignore this setting.
+- LobbyMessageTitle - Title of the discord message showing the lobby information
+- LobbyMessageColor and ActiveMessageColor - Hex values used for the discord embed messages
+- LobbyThreshold - The number of players required to launch the lobby. Total number of players (two teams and "either"). Must be even.
+- LobbyCooldown - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc). Note that using the Admin Panel reset button will force the bot to do nothing when the cooldown has passed (lobby can be reset manually via Admin Panel)
+- SapphireTeamName, AmberTeamName, and EitherTeamName - The team names for the lobby (left, right, and fill teams respectively)
+- EnableHeroDraft - Enables hero draft once the lobby fills up. Heroes are set in config/heroes.json but limited to 25.
+- EnableImageSend - Enables the bot to send an image when it sends team assignments and connect info. Can help to make sure players know what team they're on.
 
-### Slash Command Configuration (/lbset)
-Any option listed with an asterisk(*) above can be modified on the fly by using ```/lbset SETTING VALUE```. Tab completion also works for those settings that are settable using the command.
-Changing settings via the command has the benefit of not kicking everyone from the current lobby, however not all settings are available this way and some must be changed via config.json with a bot restart. 
-Any changes made using the command are also temporary until the next restart. Permanent changes must be made in the config file.
-
-These setting changes will only affect the default config and not any other presets (config/presets/NA.json, config/presets/EU.json, etc)
-
-Examples:
-- ```/lbset LobbyThreshold 14```
-- ```/lbset LobbyCooldown 2h```
-- ```/lbset LobbyMessageTitle 6v6 Playtest```
-- ```/lbset AmberTeamName Teen Girl Squad```
-- ```/lbset EnableHeroDraft True```
-
-Setting names are not case-sensitive, however the setting values need to follow the same format as in the config or things will start breaking.
-Cooldown needs to have units (s, m, or h), colors are in hex, thresholds are integers, and Enable options are true/false.
-
-Depending on the current state of the lobby and which setting you are changing it may update the lobby message immediately, or it may not be visible other than the bot's reply to your command.
-
-### Other Commands (/lbcom and /lbban)
+### Commands (/lbcom and /lbban)
 
 - ```/lbcom ReloadPresets```
   - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
 - ```/lbcom ReloadHeroes```
   - Reloads heroes from config/heroes.json. Will apply to any open lobbies
-- ```/lbcom GetCfg```
-  -  Sends you a DM with most of the current default configuration settings
 - ```/lbban USERID```
   - Toggles ban status on a user. USERID must be a 20 digit Discord User ID
 
