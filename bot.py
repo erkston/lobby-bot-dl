@@ -360,7 +360,7 @@ async def update_message(lobby_number):
         embed.timestamp = datetime.datetime.now()
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await Lobbies[lobby_number].lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
-        await lobby_message.edit(embed=embed, view=LobbyButtons(timeout=None))
+        await lobby_message.edit(embed=embed, view=LobbyButtons(lobby_number))
         return
     elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and not Lobbies[lobby_number].launched:
         if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
@@ -913,99 +913,123 @@ class SettingModal(discord.ui.Modal):
 
 
 class LobbyButtons(discord.ui.View):
-    @discord.ui.button(label="Sapphire", style=discord.ButtonStyle.blurple)
-    async def sapp_button_callback(self, button, interaction):
-        lobby_number = await get_lobby_number(interaction)
-        interactor = interaction.user
-        for existing_ban in Bans:
-            if interactor.id == existing_ban[2]:
-                print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
-                await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+    def __init__(self, lobby_number):
+        self.lobby_number = lobby_number
+        super().__init__(timeout=None)
+        self.sapp_button = discord.ui.button()
+        self.ambr_button = discord.ui.button()
+        self.fill_button = discord.ui.button()
+        self.add_sapp_button()
+        self.add_ambr_button()
+        self.add_fill_button()
+
+    def add_sapp_button(self):
+        self.sapp_button = discord.ui.Button(label=f"{Lobbies[self.lobby_number].sapphire_name}", style=discord.ButtonStyle.blurple)
+
+        async def sapp_button_callback(interaction: discord.Interaction):
+            lobby_number = await get_lobby_number(interaction)
+            interactor = interaction.user
+            for existing_ban in Bans:
+                if interactor.id == existing_ban[2]:
+                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                    await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+                    return
+            if interactor in Lobbies[lobby_number].ambr_players:
+                await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
                 return
-        if interactor in Lobbies[lobby_number].ambr_players:
-            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
-            return
-        if interactor in Lobbies[lobby_number].fill_players:
-            await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
-            return
-
-        interactor_already_here = False
-        for i in range(len(Lobbies[lobby_number].sapp_players)):
-            if interactor.id == Lobbies[lobby_number].sapp_players[i].id:
-                interactor_already_here = True
-                Lobbies[lobby_number].sapp_players.pop(i)
-        if interactor_already_here:
-            await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
-            await update_message(lobby_number)
-            return
-
-        if len(Lobbies[lobby_number].sapp_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
-            await interaction.response.send_message(f"{Lobbies[lobby_number].sapphire_name} is full, please join a different team", ephemeral=True)
-            return
-        elif interactor not in Lobbies[lobby_number].sapp_players:
-            Lobbies[lobby_number].sapp_players.append(interactor)
-            await interaction.response.send_message(f"Added to {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
-            await update_message(lobby_number)
-
-    @discord.ui.button(label="Amber", style=discord.ButtonStyle.red)
-    async def ambr_button_callback(self, button, interaction):
-        lobby_number = await get_lobby_number(interaction)
-        interactor = interaction.user
-        for existing_ban in Bans:
-            if interactor.id == existing_ban[2]:
-                print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
-                await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+            if interactor in Lobbies[lobby_number].fill_players:
+                await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
                 return
-        if interactor in Lobbies[lobby_number].sapp_players:
-            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
-            return
-        if interactor in Lobbies[lobby_number].fill_players:
-            await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
-            return
 
-        interactor_already_here = False
-        for i in range(len(Lobbies[lobby_number].ambr_players)):
-            if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
-                interactor_already_here = True
-                Lobbies[lobby_number].ambr_players.pop(i)
-        if interactor_already_here:
-            await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
-            await update_message(lobby_number)
-            return
-
-        if len(Lobbies[lobby_number].ambr_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
-            await interaction.response.send_message(f"{Lobbies[lobby_number].amber_name} is full, please join a different team", ephemeral=True)
-            return
-        if interactor not in Lobbies[lobby_number].ambr_players:
-            Lobbies[lobby_number].ambr_players.append(interactor)
-            await interaction.response.send_message(f"Added to {Lobbies[lobby_number].amber_name}", ephemeral=True)
-            await update_message(lobby_number)
-
-    @discord.ui.button(label="Either", style=discord.ButtonStyle.green)
-    async def fill_button_callback(self, button, interaction):
-        lobby_number = await get_lobby_number(interaction)
-        interactor = interaction.user
-        for existing_ban in Bans:
-            if interactor.id == existing_ban[2]:
-                print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
-                await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+            interactor_already_here = False
+            for i in range(len(Lobbies[lobby_number].sapp_players)):
+                if interactor.id == Lobbies[lobby_number].sapp_players[i].id:
+                    interactor_already_here = True
+                    Lobbies[lobby_number].sapp_players.pop(i)
+            if interactor_already_here:
+                await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
+                await update_message(lobby_number)
                 return
-        if interactor in Lobbies[lobby_number].sapp_players:
-            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
-            return
-        if interactor in Lobbies[lobby_number].ambr_players:
-            await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
-            return
-        if interactor not in Lobbies[lobby_number].fill_players:
-            Lobbies[lobby_number].fill_players.append(interactor)
-            await interaction.response.send_message(f"Added to fill", ephemeral=True)
-            await update_message(lobby_number)
-        else:
-            for i in range(len(Lobbies[lobby_number].fill_players)):
-                if interactor.id == Lobbies[lobby_number].fill_players[i].id:
-                    del Lobbies[lobby_number].fill_players[i]
-            await interaction.response.send_message(f"Removed from fill", ephemeral=True)
-            await update_message(lobby_number)
+
+            if len(Lobbies[lobby_number].sapp_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
+                await interaction.response.send_message(f"{Lobbies[lobby_number].sapphire_name} is full, please join a different team", ephemeral=True)
+                return
+            elif interactor not in Lobbies[lobby_number].sapp_players:
+                Lobbies[lobby_number].sapp_players.append(interactor)
+                await interaction.response.send_message(f"Added to {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
+                await update_message(lobby_number)
+
+        self.sapp_button.callback = sapp_button_callback
+        self.add_item(self.sapp_button)
+
+    def add_ambr_button(self):
+        self.ambr_button = discord.ui.Button(label=f"{Lobbies[self.lobby_number].amber_name}", style=discord.ButtonStyle.red)
+
+        async def ambr_button_callback(interaction: discord.Interaction):
+            lobby_number = await get_lobby_number(interaction)
+            interactor = interaction.user
+            for existing_ban in Bans:
+                if interactor.id == existing_ban[2]:
+                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                    await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+                    return
+            if interactor in Lobbies[lobby_number].sapp_players:
+                await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
+                return
+            if interactor in Lobbies[lobby_number].fill_players:
+                await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
+                return
+
+            interactor_already_here = False
+            for i in range(len(Lobbies[lobby_number].ambr_players)):
+                if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
+                    interactor_already_here = True
+                    Lobbies[lobby_number].ambr_players.pop(i)
+            if interactor_already_here:
+                await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
+                await update_message(lobby_number)
+                return
+
+            if len(Lobbies[lobby_number].ambr_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
+                await interaction.response.send_message(f"{Lobbies[lobby_number].amber_name} is full, please join a different team", ephemeral=True)
+                return
+            if interactor not in Lobbies[lobby_number].ambr_players:
+                Lobbies[lobby_number].ambr_players.append(interactor)
+                await interaction.response.send_message(f"Added to {Lobbies[lobby_number].amber_name}", ephemeral=True)
+                await update_message(lobby_number)
+
+        self.ambr_button.callback = ambr_button_callback
+        self.add_item(self.ambr_button)
+
+    def add_fill_button(self):
+        self.fill_button = discord.ui.Button(label=f"{Lobbies[self.lobby_number].either_name}", style=discord.ButtonStyle.green)
+
+        async def fill_button_callback(interaction: discord.Interaction):
+            lobby_number = await get_lobby_number(interaction)
+            interactor = interaction.user
+            for existing_ban in Bans:
+                if interactor.id == existing_ban[2]:
+                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                    await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
+                    return
+            if interactor in Lobbies[lobby_number].sapp_players:
+                await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
+                return
+            if interactor in Lobbies[lobby_number].ambr_players:
+                await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
+                return
+            if interactor not in Lobbies[lobby_number].fill_players:
+                Lobbies[lobby_number].fill_players.append(interactor)
+                await interaction.response.send_message(f"Added to fill", ephemeral=True)
+                await update_message(lobby_number)
+            else:
+                for i in range(len(Lobbies[lobby_number].fill_players)):
+                    if interactor.id == Lobbies[lobby_number].fill_players[i].id:
+                        del Lobbies[lobby_number].fill_players[i]
+                await interaction.response.send_message(f"Removed from fill", ephemeral=True)
+                await update_message(lobby_number)
+        self.fill_button.callback = fill_button_callback
+        self.add_item(self.fill_button)
 
 
 class HeroSelect(discord.ui.View):
