@@ -83,11 +83,11 @@ Bot Settings (config/config.json):
 - DiscordBotToken - Your bots token from the Discord Developer Portal
 - BotTimezone - Timezone used for timestamps in console output. Will use this timezone instead of system time
 - BotGame - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
-- BotAdminRole - Name of the role whose members can use /startlobby and /lbset
+- BotAdminRole* - Name of the role whose members can use /startlobby and /lbset
 Preset Settings (config/presets/*.json):
-- LobbyRole - Name of the role the bot will @mention when LobbyRolePing is set to True
+- LobbyRole* - Name of the role the bot will @mention when LobbyRolePing is set to True
 - LobbyRolePing - When True the bot will send a @mention of LobbyRole when a new lobby is opened
-- LobbyChannelName - The Channel name where the bot will put its lobby messages
+- LobbyChannel* - The Channel name where the bot will put its lobby messages
 - LobbyAutoLaunch - When True will automatically start hero draft (if enabled) and send connect info to players. When False it will wait for the Admin to press the Proceed button on the Admin Panel. Setting this False allows time to shuffle teams, make sure the server is set up, etc.
 - LobbyAutoReset - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely. Note that using the Admin Panel reset button will cause future possible resets to ignore this setting.
 - LobbyMessageTitle - Title of the discord message showing the lobby information
@@ -98,7 +98,9 @@ Preset Settings (config/presets/*.json):
 - EnableHeroDraft - Enables hero draft once the lobby fills up. Heroes are set in config/heroes.json but limited to 25.
 - EnableImageSend - Enables the bot to send an image when it sends team assignments and connect info. Can help to make sure players know what team they're on.
 
-### Commands (/lbcom and /lbban)
+(*) Role and Channel settings accept either their name or the discord ID (right click > Copy ID if you have Discord developer mode enabled)
+
+### Other Commands (/lbcom and /lbban)
 
 - ```/lbcom ReloadPresets```
   - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
