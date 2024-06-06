@@ -313,7 +313,7 @@ async def update_admin_panel(lobby_number):
 
     embed.add_field(name='Setting', value=setting_string, inline=True)
     embed.add_field(name='Value', value=value_string, inline=True)
-    await admin_panel_msg.edit(embed=embed, view=AdminButtons(timeout=None))
+    await admin_panel_msg.edit(embed=embed, view=AdminButtons(lobby_number))
     return
 
 
@@ -416,11 +416,11 @@ async def activate_lobby(lobby_number):
         if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             if not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
                 print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, waiting for host to launch')
-                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to launch the lobby (Click Proceed)")
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to launch the lobby")
                 return
             else:
                 print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, waiting for host to start draft')
-                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to start the hero draft (Click Proceed)")
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to start the hero draft")
                 return
         else:
             if not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
@@ -1064,43 +1064,80 @@ class LeaveButton(discord.ui.View):
 
 
 class AdminButtons(discord.ui.View):
-    @discord.ui.button(label="Proceed", style=discord.ButtonStyle.green, row=0)
-    async def launch_button_callback(self, button, interaction):
-        lobby_number = await get_lobby_number(interaction)
-        print(f'lobby{lobby_number}: Received proceed command from {interaction.user.display_name}')
-        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-            await interaction.response.send_message(f"LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, this button does nothing", ephemeral=True)
-            return
-        if not Lobbies[lobby_number].active:
-            await interaction.response.send_message(f"Can't launch yet, lobby is not full", ephemeral=True)
-            return
-        if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
-            await interaction.response.send_message(f"Starting hero draft for Lobby {lobby_number}", ephemeral=True)
-            await draft_heroes(lobby_number)
-            return
-        if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].hero_draft_completed:
-            await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
-            await launch_lobby(lobby_number)
-            return
-        if Lobbies[lobby_number].active and not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-            await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
-            await launch_lobby(lobby_number)
-            return
+    def __init__(self, lobby_number):
+        self.lobby_number = lobby_number
+        super().__init__(timeout=None)
+        self.launch_button = discord.ui.button()
+        self.reset_button = discord.ui.button()
+        self.close_button = discord.ui.button()
+        self.add_launch_button()
+        self.add_reset_button()
+        self.add_close_button()
 
-    @discord.ui.button(label="Reset Lobby", style=discord.ButtonStyle.blurple, row=0)
-    async def reset_button_callback(self, button, interaction):
-        lobby_number = await get_lobby_number(interaction)
-        print(f'lobby{lobby_number}: Received lobby reset command from {interaction.user.display_name}')
-        Lobbies[lobby_number].manual_mode = 1
-        await reset_lobby(lobby_number)
-        await interaction.response.send_message(f"Lobby {lobby_number} reset", ephemeral=True)
+    def add_launch_button(self):
+        if distutils.util.strtobool(Lobbies[self.lobby_number].lobby_auto_launch):
+            return
+        if not Lobbies[self.lobby_number].active:
+            self.launch_button = discord.ui.Button(label="Waiting to fill", style=discord.ButtonStyle.secondary, row=0)
+        if Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and not Lobbies[self.lobby_number].drafting_heroes and not Lobbies[self.lobby_number].hero_draft_completed and not Lobbies[self.lobby_number].launched:
+            self.launch_button = discord.ui.Button(label="Begin Hero Draft", style=discord.ButtonStyle.green, row=0)
+        elif Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].drafting_heroes and not Lobbies[self.lobby_number].launched:
+            self.launch_button = discord.ui.Button(label="Waiting for draft", style=discord.ButtonStyle.secondary, row=0)
+        elif (Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].hero_draft_completed and not Lobbies[self.lobby_number].launched or
+              Lobbies[self.lobby_number].active and not distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and not Lobbies[self.lobby_number].launched):
+            self.launch_button = discord.ui.Button(label="Launch Game", style=discord.ButtonStyle.green, row=0)
+        elif Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].hero_draft_completed and Lobbies[self.lobby_number].launched:
+            self.launch_button = discord.ui.Button(label="Already launched", style=discord.ButtonStyle.secondary, row=0)
 
-    @discord.ui.button(label="Close Lobby", style=discord.ButtonStyle.red, row=0)
-    async def close_button_callback(self, button, interaction):
-        lobby_number = await get_lobby_number(interaction)
-        print(f'lobby{lobby_number}: Received lobby close command from {interaction.user.display_name}')
-        await close_lobby(lobby_number)
-        await interaction.response.send_message(f"Lobby {lobby_number} closed", ephemeral=True)
+        async def launch_button_callback(interaction: discord.Interaction):
+            lobby_number = await get_lobby_number(interaction)
+            print(f'lobby{lobby_number}: Received proceed command from {interaction.user.display_name}')
+            if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                await interaction.response.send_message(f"LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, this button does nothing", ephemeral=True)
+                return
+            if not Lobbies[lobby_number].active:
+                await interaction.response.send_message(f"Can't launch yet, lobby is not full", ephemeral=True)
+                return
+            if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
+                await interaction.response.send_message(f"Starting hero draft for Lobby {lobby_number}", ephemeral=True)
+                await draft_heroes(lobby_number)
+                return
+            if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and Lobbies[lobby_number].hero_draft_completed:
+                await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
+                await launch_lobby(lobby_number)
+                return
+            if Lobbies[lobby_number].active and not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+                await interaction.response.send_message(f"Launching Lobby {lobby_number}", ephemeral=True)
+                await launch_lobby(lobby_number)
+                return
+
+        self.launch_button.callback = launch_button_callback
+        self.add_item(self.launch_button)
+
+    def add_reset_button(self):
+        self.reset_button = discord.ui.Button(label="Reset Lobby", style=discord.ButtonStyle.blurple, row=0)
+
+        async def reset_button_callback(interaction: discord.Interaction):
+            lobby_number = await get_lobby_number(interaction)
+            print(f'lobby{lobby_number}: Received lobby reset command from {interaction.user.display_name}')
+            Lobbies[lobby_number].manual_mode = 1
+            await reset_lobby(lobby_number)
+            await interaction.response.send_message(f"Lobby {lobby_number} reset", ephemeral=True)
+
+        self.reset_button.callback = reset_button_callback
+        self.add_item(self.reset_button)
+
+    def add_close_button(self):
+        self.close_button = discord.ui.Button(label="Close Lobby", style=discord.ButtonStyle.red, row=0)
+
+        async def close_button_callback(interaction: discord.Interaction):
+            lobby_number = await get_lobby_number(interaction)
+            print(f'lobby{lobby_number}: Received lobby close command from {interaction.user.display_name}')
+            await close_lobby(lobby_number)
+            await interaction.response.send_message(f"Lobby {lobby_number} closed", ephemeral=True)
+
+        self.close_button.callback = close_button_callback
+        self.add_item(self.close_button)
 
     @discord.ui.button(label="Shuffle Teams", style=discord.ButtonStyle.secondary, row=1)
     async def shuffle_button_callback(self, button, interaction):
