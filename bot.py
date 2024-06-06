@@ -277,9 +277,9 @@ async def update_admin_panel(lobby_number):
                 embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and will launch automatically when full')
         else:
             if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open, draft will not begin until you hit Proceed')
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open, draft will wait for you before beginning')
             else:
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open but will not launch until you hit Proceed')
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and will wait for you before launching')
     else:
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
             if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
@@ -294,13 +294,13 @@ async def update_admin_panel(lobby_number):
         else:
             if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
                 if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, hero draft will begin when you hit Proceed')
+                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, hero draft will begin when you hit the green button')
                 elif Lobbies[lobby_number].drafting_heroes:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft is ongoing, lobby will not launch until you hit Proceed')
+                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft is ongoing, when complete it will wait for you to launch')
                 elif Lobbies[lobby_number].hero_draft_completed:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete but will not launch until you hit Proceed')
+                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete but will not launch until you hit the green button')
             else:
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full but will not launch until you hit Proceed')
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full but will not launch until you hit the green button')
 
     if Lobbies[lobby_number].launched == 1:
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is launched! DMs were sent to all players')
@@ -496,7 +496,7 @@ async def draft_heroes(lobby_number):
             Lobbies[lobby_number].hero_draft_completed = 1
             await update_message(lobby_number)
             await update_admin_panel(lobby_number)
-            await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} hero draft is complete and waiting for you to launch the lobby (Click Proceed)")
+            await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} hero draft is complete and waiting for you to launch the lobby")
 
 
 async def start_player_pick(lobby_number, team, index):
