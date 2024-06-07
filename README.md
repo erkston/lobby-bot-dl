@@ -7,7 +7,9 @@ Once a threshold is reached the bot will split the lobby members into two teams,
 
 - Team selection
   - Players can select whichever team they'd like, or click "Either" to fill any remaining spots
-- Full hero draft
+- Captains Mode/Player Draft
+  - Host will select two captains to draft teams from remaining players. Draft information is updated live in the lobby message.
+- Hero draft
   - If enabled, the bot will message all players one by one to draft a hero. Draft information is updated live in the lobby message. Heroes can be set in config/heroes.json
 - Preset support
   - Presets can be made to template most available options. Allows you to easily create lobbies for different regions, games, etc.
@@ -20,6 +22,10 @@ Once a threshold is reached the bot will split the lobby members into two teams,
 Example lobby:
 
 ![Example Lobby](https://i.imgur.com/bQ32Eq3.png)
+
+Captains Mode:
+
+![Captains Mode](https://i.imgur.com/CWtHq3v.png)
 
 Hero draft:
 
@@ -42,7 +48,7 @@ When a lobby is started you will receive a DM with the Admin Panel.
 
 Admin panel functions:
 
-- Waiting/Begin Hero Draft/Launch Lobby - when LobbyAutoLaunch is False the lobby will wait for the host to press this button to both begin the hero draft and to launch the lobby. If LobbyAutoLaunch is true, those steps will happen automatically and this button will not appear on the panel.
+- Waiting/Begin Player Draft/Begin Hero Draft/Launch Lobby - when LobbyAutoLaunch is False the lobby will wait for the host to press this button to begin the player/hero drafts and to launch the lobby. If LobbyAutoLaunch is true, those steps will happen automatically and this button will not appear on the panel.
 - Reset Lobby - removes all players but keeps the lobby open
 - Close Lobby - closes the lobby completely
 - Shuffle Teams - Randomizes teams, if there are any fill players it will move them to a team. You can shuffle a team up until the hero draft is started
@@ -92,11 +98,12 @@ Preset Settings (config/presets/*.json):
 - LobbyAutoReset - When True the bot will reset and reopen the lobby after LobbyCooldown has passed. When false it will close the lobby completely. Note that using the Admin Panel reset button will cause future possible resets to ignore this setting.
 - LobbyMessageTitle - Title of the discord message showing the lobby information
 - LobbyMessageColor and ActiveMessageColor - Hex values used for the discord embed messages
+- EnableImageSend - Enables the bot to send an image when it sends team assignments and connect info. Can help to make sure players know what team they're on.
 - LobbyThreshold - The number of players required to launch the lobby. Total number of players (two teams and "either"). Must be even.
 - LobbyCooldown - Time after which the bot will either reset or close the lobby (based on LobbyAutoReset). Must have units attached (30m, 2h, 1d, etc). Note that using the Admin Panel reset button will force the bot to do nothing when the cooldown has passed (lobby can be reset manually via Admin Panel)
 - SapphireTeamName, AmberTeamName, and EitherTeamName - The team names for the lobby (left, right, and fill teams respectively)
 - EnableHeroDraft - Enables hero draft once the lobby fills up. Heroes are set in config/heroes.json but limited to 25.
-- EnableImageSend - Enables the bot to send an image when it sends team assignments and connect info. Can help to make sure players know what team they're on.
+- EnablePlayerDraft - Enables Captains Mode/Player Draft
 
 (*) Role and Channel settings accept either their name or the discord ID (right click > Copy ID if you have Discord developer mode enabled)
 

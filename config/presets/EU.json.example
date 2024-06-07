@@ -7,11 +7,12 @@
     "LobbyMessageTitle": "\uD83C\uDDEA\uD83C\uDDFA EU PUG \uD83C\uDDEA\uD83C\uDDFA",
     "LobbyMessageColor": "001489",
     "ActiveMessageColor": "FFDD00",
+    "EnableImageSend": "False",
     "LobbyThreshold": "12",
     "LobbyCooldown": "75m",
     "SapphireTeamName": "West",
     "AmberTeamName": "East",
     "EitherTeamName": "Iron Curtain",
     "EnableHeroDraft": "True",
-    "EnableImageSend": "False"
+    "EnablePlayerDraft": "True"
 }

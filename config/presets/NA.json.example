@@ -7,11 +7,12 @@
     "LobbyMessageTitle": "\uD83C\uDDFA\uD83C\uDDF8 NA PUG \uD83C\uDDFA\uD83C\uDDF8",
     "LobbyMessageColor": "B31942",
     "ActiveMessageColor": "0A3161",
+    "EnableImageSend": "False",
     "LobbyThreshold": "12",
     "LobbyCooldown": "75m",
     "SapphireTeamName": "Coke",
     "AmberTeamName": "Pop",
     "EitherTeamName": "Soda",
     "EnableHeroDraft": "True",
-    "EnableImageSend": "False"
+    "EnablePlayerDraft": "True"
 }

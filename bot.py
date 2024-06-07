@@ -203,7 +203,9 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                                          lobby_title, preset['LobbyMessageColor'], preset['ActiveMessageColor'],
                                          preset['LobbyThreshold'], preset['LobbyCooldown'], preset['SapphireTeamName'],
                                          preset['AmberTeamName'], preset['EitherTeamName'], 0, "none",
-                                         preset['EnableHeroDraft'], discord.Message, preset['EnableImageSend'], lobby_channel))
+                                         preset['EnableHeroDraft'], discord.Message, preset['EnableImageSend'], lobby_channel,
+                                         preset['EnablePlayerDraft'], 0, 0, discord.User, discord.User,
+                                         [], discord.User))
             print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
 
         await update_message(lobby_number)
@@ -251,7 +253,8 @@ async def on_ready():
                                  0, 0, "role", "True","True",
                                  "True", "Title", "FFFFFF","FFFFFF",
                                  0, 0, 0, 0, 0, 0,
-                                 "none", "True", discord.Message, "False", 0))
+                                 "none", "True", discord.Message, "False", 0,
+                                 0, 0, 0, discord.User, discord.User, [], discord.User))
     print('Startup complete, awaiting command')
     print('------------------------------------------------------')
 
@@ -276,46 +279,95 @@ async def update_admin_panel(lobby_number):
         print(f'lobby{lobby_number}: Admin panel message not found')
         return
     if Lobbies[lobby_number].active == 0:
-        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-            if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and draft will begin automatically when full')
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+            if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open, player draft will begin automatically')
             else:
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and will launch automatically when full')
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and will for you to begin player draft')
+        elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+            if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open, hero draft will begin automatically')
+            else:
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and will for you to begin hero draft')
         else:
-            if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open, draft will wait for you before beginning')
+            if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open, lobby will launch automatically when full')
             else:
                 embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is open and will wait for you before launching')
     else:
-        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-            if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, hero draft will begin automatically')
-                elif Lobbies[lobby_number].drafting_heroes:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft is ongoing and will launch automatically when complete')
-                elif Lobbies[lobby_number].hero_draft_completed:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete, lobby will launch automaticalls')
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+            if not Lobbies[lobby_number].drafting_players:
+                if not Lobbies[lobby_number].player_draft_completed:
+                    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, player draft will begin automatically')
+                    else:
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, waiting for you to begin player draft')
+                else:
+                    if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+                        if not Lobbies[lobby_number].drafting_heroes:
+                            if not Lobbies[lobby_number].hero_draft_completed:
+                                if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",description='Player draft complete, hero draft will begin automatically')
+                                else:
+                                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft complete, waiting for you to begin hero draft')
+                            else:
+                                if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel",description='Hero draft complete, lobby will launch automatically')
+                                else:
+                                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete, waiting for you to start the game')
+                        else:
+                            if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft ongoing, lobby will launch automatically')
+                            else:
+                                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft ongoing, lobby will wait for you to launch')
+                    else:
+                        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft complete, lobby will launch automatically')
+                        else:
+                            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft complete, waiting for you to start the game')
             else:
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full and will launch automatically')
+                if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+                    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft ongoing, hero draft will start automatically')
+                    else:
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft ongoing, hero draft will wait for you to start')
+                else:
+                    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft ongoing, lobby will launch automatically')
+                    else:
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Player draft ongoing, lobby will wait for you to launch')
         else:
             if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                if not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full, hero draft will begin when you hit the green button')
-                elif Lobbies[lobby_number].drafting_heroes:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft is ongoing, when complete it will wait for you to launch')
-                elif Lobbies[lobby_number].hero_draft_completed:
-                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete but will not launch until you hit the green button')
+                if not Lobbies[lobby_number].drafting_heroes:
+                    if not Lobbies[lobby_number].hero_draft_completed:
+                        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby full, hero draft will begin automatically')
+                        else:
+                            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby full, waiting for you to begin hero draft')
+                    else:
+                        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete, lobby will launch automatically')
+                        else:
+                            embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft complete, waiting for you to start the game')
+                else:
+                    if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft ongoing, lobby will launch automatically')
+                    else:
+                        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Hero draft ongoing, lobby will wait for you to launch')
             else:
-                embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is full but will not launch until you hit the green button')
+                if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby full, lobby will launch automatically')
+                else:
+                    embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby full, waiting for you to start the game')
 
     if Lobbies[lobby_number].launched == 1:
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is launched! DMs were sent to all players')
 
-    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nLobbyThreshold\nLobbyCooldown\nEnableHeroDraft\nEnableImageSend"
+    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nLobbyThreshold\nLobbyCooldown\nEnableHeroDraft\nEnableImageSend\nEnablePlayerDraft"
     value_string = (f"{Lobbies[lobby_number].server}\n{Lobbies[lobby_number].password}\n{Lobbies[lobby_number].preset}\n{Lobbies[lobby_number].lobby_auto_launch}\n"
                     f"{Lobbies[lobby_number].lobby_auto_reset}\n{Lobbies[lobby_number].lobby_message_title}\n{Lobbies[lobby_number].sapphire_name}\n"
                     f"{Lobbies[lobby_number].amber_name}\n{Lobbies[lobby_number].either_name}\n{Lobbies[lobby_number].lobby_threshold}\n"
-                    f"{Lobbies[lobby_number].lobby_cooldown}\n{Lobbies[lobby_number].enable_hero_draft}\n{Lobbies[lobby_number].enable_image_send}")
+                    f"{Lobbies[lobby_number].lobby_cooldown}\n{Lobbies[lobby_number].enable_hero_draft}\n{Lobbies[lobby_number].enable_image_send}\n{Lobbies[lobby_number].enable_player_draft}")
 
     embed.add_field(name='Setting', value=setting_string, inline=True)
     embed.add_field(name='Value', value=value_string, inline=True)
@@ -352,9 +404,32 @@ async def update_message(lobby_number):
         fill_players_string = "None"
     current_lobby_size = len(sapp_players) + len(ambr_players) + len(fill_players)
 
+    if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+        player_pool = []
+        for i in range(len(Lobbies[lobby_number].player_pool)):
+            player_pool.append(str(Lobbies[lobby_number].player_pool[i].display_name))
+        player_pool_string = "\n".join(player_pool)
+        if not player_pool_string:
+            player_pool_string = "None"
+        current_lobby_size = len(player_pool) + len(sapp_players) + len(ambr_players)
+
     if current_lobby_size < int(Lobbies[lobby_number].lobby_threshold):
         Lobbies[lobby_number].active = 0
         print(f'lobby{lobby_number}: Lobby threshold not met ({current_lobby_size}<{Lobbies[lobby_number].lobby_threshold}), displaying lobby information')
+
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+            embed = discord.Embed(title=f'{Lobbies[lobby_number].lobby_message_title}',
+                                  description='Captains Mode, player draft will start when the lobby is full. '
+                                              'Currently ' + str(current_lobby_size) + '/' + str(Lobbies[lobby_number].lobby_threshold) + ' players',
+                                  color=int(Lobbies[lobby_number].lobby_message_color, 16))
+            embed.add_field(name="Players", value=player_pool_string, inline=True)
+            embed.add_field(name='\u200b', value='\u200b', inline=False)
+            embed.timestamp = datetime.datetime.now()
+            embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
+            lobby_message = await Lobbies[lobby_number].lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
+            await lobby_message.edit(embed=embed, view=CMButton(timeout=None))
+            return
+
         embed = discord.Embed(title=f'{Lobbies[lobby_number].lobby_message_title}',
                               description='Join using buttons below, server info will be sent via DM when the lobby is full. '
                                           'Currently ' + str(current_lobby_size) + '/' + str(Lobbies[lobby_number].lobby_threshold) + ' players',
@@ -369,7 +444,14 @@ async def update_message(lobby_number):
         await lobby_message.edit(embed=embed, view=LobbyButtons(lobby_number))
         return
     elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and not Lobbies[lobby_number].launched:
-        if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
+
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft) and not Lobbies[lobby_number].player_draft_completed:
+            if not Lobbies[lobby_number].drafting_players:
+                embed = discord.Embed(title=f'Player draft is about to start', description="Waiting for host...", color=int(Lobbies[lobby_number].active_message_color, 16))
+            else:
+                embed = discord.Embed(title=f'Player draft is ongoing', description=f"Captains are {Lobbies[lobby_number].sapp_captain.display_name} and {Lobbies[lobby_number].ambr_captain.display_name}", color=int(Lobbies[lobby_number].active_message_color, 16))
+
+        elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
             if not Lobbies[lobby_number].drafting_heroes:
                 embed = discord.Embed(title=f'Hero draft is about to start', description="Waiting for host...", color=int(Lobbies[lobby_number].active_message_color, 16))
             else:
@@ -387,11 +469,13 @@ async def update_message(lobby_number):
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft) and not Lobbies[lobby_number].player_draft_completed:
+            embed.add_field(name="Player Pool", value=player_pool_string, inline=False)
         embed.timestamp = datetime.datetime.now()
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await Lobbies[lobby_number].lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
 
-        if Lobbies[lobby_number].active and not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].launched:
+        if Lobbies[lobby_number].active and not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].drafting_players and not Lobbies[lobby_number].player_draft_completed and not Lobbies[lobby_number].launched:
             await lobby_message.edit(embed=embed, view=LeaveButton(timeout=None))
             return
         await lobby_message.edit(embed=embed, view=None)
@@ -419,23 +503,33 @@ async def activate_lobby(lobby_number):
         await assign_teams(lobby_number)
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
-        if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-            if not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, waiting for host to launch')
-                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to launch the lobby")
+
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+            if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                print(f'lobby{lobby_number}: EnablePlayerDraft is {Lobbies[lobby_number].enable_player_draft}, LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, waiting for host to start player draft')
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is waiting for you to start the player draft")
                 return
             else:
-                print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, waiting for host to start draft')
-                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is full and waiting for you to start the hero draft")
+                print(f'lobby{lobby_number}: EnablePlayerDraft is {Lobbies[lobby_number].enable_player_draft}, LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, starting player draft')
+                await draft_players(lobby_number)
+                return
+        elif distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+            if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                print(f'lobby{lobby_number}: EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, waiting for host to start hero draft')
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is waiting for you to start the hero draft")
+                return
+            else:
+                print(f'lobby{lobby_number}: EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, starting player draft')
+                await draft_heroes(lobby_number)
                 return
         else:
-            if not distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
-                print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, launching lobby')
-                await launch_lobby(lobby_number)
+            if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+                print(f'lobby{lobby_number}: EnablePlayerDraft is {Lobbies[lobby_number].enable_player_draft}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, waiting for host to launch')
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} is waiting for you to start the game")
                 return
             else:
-                print(f'lobby{lobby_number}: LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, launching lobby')
-                await draft_heroes(lobby_number)
+                print(f'lobby{lobby_number}: EnablePlayerDraft is {Lobbies[lobby_number].enable_player_draft}, EnableHeroDraft is {Lobbies[lobby_number].enable_hero_draft}, LobbyAutoLaunch is {Lobbies[lobby_number].lobby_auto_launch}, launching lobby')
+                await launch_lobby(lobby_number)
                 return
     else:
         print(f'lobby{lobby_number}: Lobby was already started, doing nothing...')
@@ -467,9 +561,118 @@ async def launch_lobby(lobby_number):
         return
 
 
+async def draft_players(lobby_number):
+    if Lobbies[lobby_number].drafting_players or Lobbies[lobby_number].player_draft_completed:
+        print(f'lobby{lobby_number}: Player draft was already started!')
+        return
+    else:
+        Lobbies[lobby_number].drafting_players = 1
+        print(f'lobby{lobby_number}: Beginning player draft...')
+        random.shuffle(Lobbies[lobby_number].player_pool)
+        await get_captains(lobby_number)
+        await update_message(lobby_number)
+        await update_admin_panel(lobby_number)
+        team_size = int(Lobbies[lobby_number].lobby_threshold) / 2
+        first_pick = random.choice(["sapp", "ambr"])
+        for i in range(int(team_size)-1):
+            if first_pick == "sapp":
+                await start_captain_pick(lobby_number, "sapp")
+                await start_captain_pick(lobby_number, "ambr")
+            else:
+                await start_captain_pick(lobby_number, "ambr")
+                await start_captain_pick(lobby_number, "sapp")
+
+        Lobbies[lobby_number].drafting_players = 0
+        Lobbies[lobby_number].player_draft_completed = 1
+        print(f'lobby{lobby_number}: Player draft completed!')
+        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
+            if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+                await draft_heroes(lobby_number)
+            else:
+                await launch_lobby(lobby_number)
+        else:
+            if distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft):
+                await update_message(lobby_number)
+                await update_admin_panel(lobby_number)
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} player draft is complete and waiting for you to start hero draft")
+            else:
+                await update_message(lobby_number)
+                await update_admin_panel(lobby_number)
+                await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} player draft is complete and waiting for you to launch the lobby")
+
+
+async def get_captains(lobby_number):
+    Lobbies[lobby_number].waiting_for_pick = 1
+    embed = discord.Embed(title=f"Pick two players to be captains", color=int("0B6623", 16))
+    draft_msg = await Lobbies[lobby_number].host.send(embed=embed, view=CaptainSelect(Lobbies[lobby_number].player_pool))
+    Lobbies[lobby_number].draft_msg = draft_msg
+    while Lobbies[lobby_number].waiting_for_pick:
+        await asyncio.sleep(1)
+    Lobbies[lobby_number].selected_player = Lobbies[lobby_number].sapp_captain
+    Lobbies[lobby_number].sapp_players.append(Lobbies[lobby_number].sapp_captain)
+    await remove_selected_player(lobby_number)
+    Lobbies[lobby_number].selected_player = Lobbies[lobby_number].ambr_captain
+    Lobbies[lobby_number].ambr_players.append(Lobbies[lobby_number].ambr_captain)
+    await remove_selected_player(lobby_number)
+    await update_message(lobby_number)
+
+
+async def start_captain_pick(lobby_number, team):
+    if team == "sapp":
+        Lobbies[lobby_number].waiting_for_pick = 1
+        await get_captain_pick(lobby_number, team)
+        while Lobbies[lobby_number].waiting_for_pick:
+            await asyncio.sleep(1)
+        Lobbies[lobby_number].sapp_players.append(Lobbies[lobby_number].selected_player)
+        await remove_selected_player(lobby_number)
+        await update_message(lobby_number)
+        return
+    else:
+        Lobbies[lobby_number].waiting_for_pick = 1
+        await get_captain_pick(lobby_number, team)
+        while Lobbies[lobby_number].waiting_for_pick:
+            await asyncio.sleep(1)
+        Lobbies[lobby_number].ambr_players.append(Lobbies[lobby_number].selected_player)
+        await remove_selected_player(lobby_number)
+        await update_message(lobby_number)
+
+
+async def get_captain_pick(lobby_number, team):
+    sapp_players = []
+    ambr_players = []
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
+        sapp_players.append(str(Lobbies[lobby_number].sapp_players[i].display_name))
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
+        ambr_players.append(str(Lobbies[lobby_number].ambr_players[i].display_name))
+    sapp_players_string = "\n".join(sapp_players)
+    ambr_players_string = "\n".join(ambr_players)
+    if not sapp_players_string:
+        sapp_players_string = "None"
+        if not ambr_players_string:
+            ambr_players_string = "None"
+    if team == "sapp":
+        embed = discord.Embed(title=f"It's your turn to pick a player! You are captain of {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
+        drafter = Lobbies[lobby_number].sapp_captain
+    else:
+        embed = discord.Embed(title=f"It's your turn to pick a player! You are captain of {Lobbies[lobby_number].amber_name}", color=int("FFBF00", 16))
+        drafter = Lobbies[lobby_number].ambr_captain
+    embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
+    embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
+
+    draft_msg = await drafter.send(embed=embed, view=PlayerSelect(Lobbies[lobby_number].player_pool))
+    Lobbies[lobby_number].draft_msg = draft_msg
+
+
+async def remove_selected_player(lobby_number):
+    for i in range(len(Lobbies[lobby_number].player_pool)):
+        if Lobbies[lobby_number].player_pool[i] == Lobbies[lobby_number].selected_player:
+            Lobbies[lobby_number].player_pool.pop(i)
+            return
+
+
 async def draft_heroes(lobby_number):
-    if Lobbies[lobby_number].drafting_heroes:
-        print(f'lobby{lobby_number}: Draft was already started!')
+    if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
+        print(f'lobby{lobby_number}: Hero draft was already started!')
         return
     else:
         Lobbies[lobby_number].drafting_heroes = 1
@@ -493,13 +696,11 @@ async def draft_heroes(lobby_number):
             else:
                 await start_player_pick(lobby_number, "ambr", i)
                 await start_player_pick(lobby_number, "sapp", i)
+        Lobbies[lobby_number].drafting_heroes = 0
+        Lobbies[lobby_number].hero_draft_completed = 1
         if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_launch):
-            Lobbies[lobby_number].drafting_heroes = 0
-            Lobbies[lobby_number].hero_draft_completed = 1
             await launch_lobby(lobby_number)
         else:
-            Lobbies[lobby_number].drafting_heroes = 0
-            Lobbies[lobby_number].hero_draft_completed = 1
             await update_message(lobby_number)
             await update_admin_panel(lobby_number)
             await Lobbies[lobby_number].host.dm_channel.send(f"Lobby {lobby_number} hero draft is complete and waiting for you to launch the lobby")
@@ -541,9 +742,9 @@ async def get_player_pick(lobby_number, player, team):
     sapp_players_string = "\n".join(sapp_players)
     ambr_players_string = "\n".join(ambr_players)
     if team == "sapp":
-        embed = discord.Embed(title=f"It's your turn to pick! You are on {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
+        embed = discord.Embed(title=f"It's your turn to pick a hero! You are on {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
     else:
-        embed = discord.Embed(title=f"It's your turn to pick! You are on {Lobbies[lobby_number].amber_name}",
+        embed = discord.Embed(title=f"It's your turn to pick a hero! You are on {Lobbies[lobby_number].amber_name}",
                               color=int("FFBF00", 16))
     embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
     embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
@@ -660,16 +861,22 @@ async def size_lobby(lobby_number):
 async def reset_lobby(lobby_number):
     Lobbies[lobby_number].active = 0
     Lobbies[lobby_number].drafting_heroes = 0
+    Lobbies[lobby_number].drafting_players = 0
     Lobbies[lobby_number].waiting_for_pick = 0
     Lobbies[lobby_number].hero_draft_completed = 0
+    Lobbies[lobby_number].player_draft_completed = 0
     Lobbies[lobby_number].launched = 0
     Lobbies[lobby_number].drafter = discord.User
+    Lobbies[lobby_number].sapp_captain = discord.User
+    Lobbies[lobby_number].ambr_captain = discord.User
+    Lobbies[lobby_number].selected_player = discord.User
     Lobbies[lobby_number].draft_msg = discord.Message
     Lobbies[lobby_number].sapp_players.clear()
     Lobbies[lobby_number].ambr_players.clear()
     Lobbies[lobby_number].fill_players.clear()
     Lobbies[lobby_number].sapp_heroes.clear()
     Lobbies[lobby_number].ambr_heroes.clear()
+    Lobbies[lobby_number].player_pool.clear()
     Lobbies[lobby_number].picked_heroes.clear()
     Lobbies[lobby_number].available_heroes = Heroes[:]
     await update_message(lobby_number)
@@ -914,6 +1121,36 @@ class SettingModal(discord.ui.Modal):
             await update_message(lobby_number)
             await update_admin_panel(lobby_number)
             return
+        elif Lobbies[lobby_number].selected_setting == "EnablePlayerDraft":
+            if Lobbies[lobby_number].launched or Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
+                await interaction.response.send_message(f"It's too late to change EnablePlayerDraft right now", ephemeral=True)
+                return
+            else:
+                existing_value = Lobbies[lobby_number].enable_player_draft
+                if distutils.util.strtobool(value) == distutils.util.strtobool(existing_value):
+                    await interaction.response.send_message(f"EnablePlayerDraft is already {value}", ephemeral=True)
+                    return
+                if distutils.util.strtobool(value):
+                    Lobbies[lobby_number].enable_player_draft = value
+                    for player in Lobbies[lobby_number].sapp_players:
+                        Lobbies[lobby_number].player_pool.append(player)
+                    for player in Lobbies[lobby_number].ambr_players:
+                        Lobbies[lobby_number].player_pool.append(player)
+                    for player in Lobbies[lobby_number].fill_players:
+                        Lobbies[lobby_number].player_pool.append(player)
+                    Lobbies[lobby_number].sapp_players.clear()
+                    Lobbies[lobby_number].ambr_players.clear()
+                    Lobbies[lobby_number].fill_players.clear()
+                else:
+                    Lobbies[lobby_number].enable_player_draft = value
+                    for player in Lobbies[lobby_number].player_pool:
+                        Lobbies[lobby_number].fill_players.append(player)
+                    Lobbies[lobby_number].player_pool.clear()
+
+                await interaction.response.send_message(f"Lobby {lobby_number} EnablePlayerDraft changed to {Lobbies[lobby_number].enable_player_draft}", ephemeral=True)
+                await update_message(lobby_number)
+                await update_admin_panel(lobby_number)
+                return
         else:
             await interaction.response.send_message(f"Setting not found!", ephemeral=True)
 
@@ -1038,6 +1275,60 @@ class LobbyButtons(discord.ui.View):
         self.add_item(self.fill_button)
 
 
+class CaptainSelect(discord.ui.View):
+    def __init__(self, player_pool):
+        super().__init__(timeout=None)
+        self.player_pool = player_pool
+        self.player_options = []
+        self.parse_options()
+
+        select = discord.ui.Select(placeholder="Select Captains", row=0, min_values=2, max_values=2, options=self.player_options)
+        select.callback = self.captain_select_callback
+        self.add_item(select)
+
+    def parse_options(self):
+        self.player_options = [discord.SelectOption(label=f"{player.global_name}", value=f"{player.id}") for player in self.player_pool]
+
+    async def captain_select_callback(self, interaction: discord.Interaction):
+        lobby_number = await get_lobby_number(interaction)
+        sapp_captain_id = interaction.data["values"][0]
+        ambr_captain_id = interaction.data["values"][1]
+        Lobbies[lobby_number].sapp_captain = bot_guild.get_member(int(f"{sapp_captain_id}"))
+        Lobbies[lobby_number].ambr_captain = bot_guild.get_member(int(f"{ambr_captain_id}"))
+        print(f"lobby{lobby_number}: Captains {Lobbies[lobby_number].sapp_captain.display_name} and {Lobbies[lobby_number].ambr_captain.display_name} have been picked")
+        embed = discord.Embed(title=f"You have selected {Lobbies[lobby_number].sapp_captain.display_name} and {Lobbies[lobby_number].ambr_captain.display_name} to be captains", color=int("808080", 16))
+        await Lobbies[lobby_number].draft_msg.edit(embed=embed, view=None)
+        await interaction.response.defer()
+        Lobbies[lobby_number].waiting_for_pick = 0
+
+
+class PlayerSelect(discord.ui.View):
+    def __init__(self, player_pool):
+        super().__init__(timeout=None)
+        self.player_pool = player_pool
+        self.player_options = []
+        self.parse_options()
+
+        select = discord.ui.Select(placeholder="Select a player", row=0, min_values=1, max_values=1, options=self.player_options)
+        select.callback = self.player_select_callback
+        self.add_item(select)
+
+    def parse_options(self):
+        self.player_options = [discord.SelectOption(label=f"{player.global_name}", value=f"{player.id}") for player in self.player_pool]
+
+    async def player_select_callback(self, interaction: discord.Interaction):
+        lobby_number = await get_lobby_number(interaction)
+        selected_player_id = interaction.data["values"][0]
+        Lobbies[lobby_number].selected_player = bot_guild.get_member(int(f"{selected_player_id}"))
+        await remove_selected_player(lobby_number)
+
+        print(f"lobby{lobby_number}: Player {Lobbies[lobby_number].selected_player.display_name} has been picked")
+        embed = discord.Embed(title=f"You have drafted {Lobbies[lobby_number].selected_player.display_name}", color=int("808080", 16))
+        await Lobbies[lobby_number].draft_msg.edit(embed=embed, view=None)
+        await interaction.response.defer()
+        Lobbies[lobby_number].waiting_for_pick = 0
+
+
 class HeroSelect(discord.ui.View):
     def __init__(self, avail_heroes):
         super().__init__(timeout=None)
@@ -1069,6 +1360,25 @@ class HeroSelect(discord.ui.View):
             await interaction.response.send_message(f"It is not your turn to draft", ephemeral=True)
 
 
+class CMButton(discord.ui.View):
+    @discord.ui.button(label="Join/Leave", style=discord.ButtonStyle.primary, row=0)
+    async def cm_button_callback(self, button, interaction):
+        lobby_number = await get_lobby_number(interaction)
+        interactor = interaction.user
+        print(f'lobby{lobby_number}: Received cm join/leave command from {interaction.user.display_name}')
+        if interactor in Lobbies[lobby_number].player_pool:
+            for i in range(len(Lobbies[lobby_number].player_pool)):
+                if interactor.id == Lobbies[lobby_number].player_pool[i].id:
+                    Lobbies[lobby_number].sapp_players.pop(i)
+            await interaction.response.send_message(f"Removed from lobby", ephemeral=True)
+            await update_message(lobby_number)
+            return
+        else:
+            Lobbies[lobby_number].player_pool.append(interactor)
+            await interaction.response.send_message(f"Added to lobby", ephemeral=True)
+            await update_message(lobby_number)
+
+
 class LeaveButton(discord.ui.View):
     @discord.ui.button(label="Leave Lobby", style=discord.ButtonStyle.secondary, row=0)
     async def leave_button_callback(self, button, interaction):
@@ -1087,6 +1397,13 @@ class LeaveButton(discord.ui.View):
                 if interactor.id == Lobbies[lobby_number].ambr_players[i].id:
                     Lobbies[lobby_number].ambr_players.pop(i)
             await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
+            await update_message(lobby_number)
+            return
+        elif interactor in Lobbies[lobby_number].player_pool:
+            for i in range(len(Lobbies[lobby_number].player_pool)):
+                if interactor.id == Lobbies[lobby_number].player_pool[i].id:
+                    Lobbies[lobby_number].player_pool.pop(i)
+            await interaction.response.send_message(f"Removed from player pool", ephemeral=True)
             await update_message(lobby_number)
             return
         else:
@@ -1111,9 +1428,11 @@ class AdminButtons(discord.ui.View):
             self.launch_button = discord.ui.Button(label="Already launched", style=discord.ButtonStyle.secondary, row=0)
         elif not Lobbies[self.lobby_number].active:
             self.launch_button = discord.ui.Button(label="Waiting to fill", style=discord.ButtonStyle.secondary, row=0)
+        elif Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_player_draft) and not Lobbies[self.lobby_number].player_draft_completed:
+            self.launch_button = discord.ui.Button(label="Begin Player Draft", style=discord.ButtonStyle.green, row=0)
         elif distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and not Lobbies[self.lobby_number].drafting_heroes and not Lobbies[self.lobby_number].hero_draft_completed:
             self.launch_button = discord.ui.Button(label="Begin Hero Draft", style=discord.ButtonStyle.green, row=0)
-        elif distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].drafting_heroes:
+        elif distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].drafting_heroes or distutils.util.strtobool(Lobbies[self.lobby_number].enable_player_draft) and Lobbies[self.lobby_number].drafting_players:
             self.launch_button = discord.ui.Button(label="Waiting for draft", style=discord.ButtonStyle.secondary, row=0)
         elif (distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].hero_draft_completed or
               not distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft)):
@@ -1127,6 +1446,10 @@ class AdminButtons(discord.ui.View):
                 return
             if not Lobbies[lobby_number].active:
                 await interaction.response.send_message(f"Can't launch yet, lobby is not full", ephemeral=True)
+                return
+            if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft) and not Lobbies[lobby_number].player_draft_completed:
+                await interaction.response.send_message(f"Starting player draft for Lobby {lobby_number}", ephemeral=True)
+                await draft_players(lobby_number)
                 return
             if Lobbies[lobby_number].active and distutils.util.strtobool(Lobbies[lobby_number].enable_hero_draft) and not Lobbies[lobby_number].hero_draft_completed:
                 await interaction.response.send_message(f"Starting hero draft for Lobby {lobby_number}", ephemeral=True)
@@ -1219,6 +1542,8 @@ class AdminButtons(discord.ui.View):
                                                 description="Change auto-reset behavior"),
                            discord.SelectOption(label="LobbyMessageTitle",
                                                 description="Change the title of the lobby message"),
+                           discord.SelectOption(label="EnableImageSend",
+                                                description="When true will send an image to players with lobby connect info"),
                            discord.SelectOption(label="SapphireTeamName",
                                                 description="Change the Sapphire team name"),
                            discord.SelectOption(label="AmberTeamName",
@@ -1231,8 +1556,8 @@ class AdminButtons(discord.ui.View):
                                                 description="Change reset cooldown if LobbyAutoReset is True"),
                            discord.SelectOption(label="EnableHeroDraft",
                                                 description="When true teams will draft heros when lobby is full"),
-                           discord.SelectOption(label="EnableImageSend",
-                                                description="When true will send an image to players with lobby connect info")
+                           discord.SelectOption(label="EnablePlayerDraft",
+                                                description="When true host will select two captains to draft teams")
                        ]
                        )
     async def select_callback(self, select, interaction):
