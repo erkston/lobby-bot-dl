@@ -21,7 +21,7 @@ BotGame = config['BotGame']
 BotAdminRole = config['BotAdminRole']
 
 
-version = "v0.3.1"
+version = "v0.3.2"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
@@ -1374,7 +1374,7 @@ class CMButton(discord.ui.View):
         if interactor in Lobbies[lobby_number].player_pool:
             for i in range(len(Lobbies[lobby_number].player_pool)):
                 if interactor.id == Lobbies[lobby_number].player_pool[i].id:
-                    Lobbies[lobby_number].sapp_players.pop(i)
+                    Lobbies[lobby_number].player_pool.pop(i)
             await interaction.response.send_message(f"Removed from lobby", ephemeral=True)
             await update_message(lobby_number)
             return
