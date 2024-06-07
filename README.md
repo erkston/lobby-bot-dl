@@ -27,7 +27,7 @@ Hero draft:
 
 Admin panel:
 
-![Admin Panel](https://i.imgur.com/44h7KLr.png)
+![Admin Panel](https://i.imgur.com/14iQ5Pm.png)
 
 ### Usage
 
