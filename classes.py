@@ -4,7 +4,8 @@ class Lobby:
                  selected_hero, hero_draft_completed, launched, lobby_role, lobby_role_ping, lobby_auto_launch, lobby_auto_reset,
                  lobby_message_title, lobby_message_color, active_message_color, lobby_threshold, lobby_cooldown, sapphire_name,
                  amber_name, either_name, manual_mode, selected_setting, enable_hero_draft, draft_msg, enable_image_send, lobby_channel,
-                 enable_player_draft, drafting_players, player_draft_completed, sapp_captain, ambr_captain, player_pool, selected_player):
+                 enable_player_draft, drafting_players, player_draft_completed, sapp_captain, ambr_captain, player_pool, selected_player,
+                 selecting_captains):
         self.number = lobby_number
         self.message_id = message_id
         self.host = host
@@ -51,3 +52,4 @@ class Lobby:
         self.ambr_captain = ambr_captain
         self.player_pool = player_pool
         self.selected_player = selected_player
+        self.selecting_captains = selecting_captains
