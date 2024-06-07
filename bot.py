@@ -362,6 +362,8 @@ async def update_admin_panel(lobby_number):
                 else:
                     embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby full, waiting for you to start the game')
 
+    if Lobbies[lobby_number].readying:
+        embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Players are readying up, game will start automatically')
     if Lobbies[lobby_number].launched == 1:
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is launched! DMs were sent to all players')
 
@@ -471,6 +473,20 @@ async def update_message(lobby_number):
                 embed = discord.Embed(title=f'Lobby is full!', description='Lobby is launching...', color=int(Lobbies[lobby_number].active_message_color, 16))
             else:
                 embed = discord.Embed(title=f'Lobby is full!', description='Waiting for host...', color=int(Lobbies[lobby_number].active_message_color, 16))
+
+        if Lobbies[lobby_number].readying:
+            not_ready = []
+            for i in range(len(Lobbies[lobby_number].sapp_players)):
+                if not Lobbies[lobby_number].sapp_players_ready[i]:
+                    not_ready.append(str(Lobbies[lobby_number].sapp_players[i].display_name))
+            for i in range(len(Lobbies[lobby_number].ambr_players)):
+                if not Lobbies[lobby_number].ambr_players_ready[i]:
+                    not_ready.append(str(Lobbies[lobby_number].ambr_players[i].display_name))
+            not_ready_string = ", ".join(not_ready)
+            if not not_ready_string:
+                not_ready_string = "None"
+            embed = discord.Embed(title=f"Ready up! Check your DMs", description=f'Not ready: {not_ready_string}')
+
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
