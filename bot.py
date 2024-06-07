@@ -1101,17 +1101,17 @@ class AdminButtons(discord.ui.View):
     def add_launch_button(self):
         if distutils.util.strtobool(Lobbies[self.lobby_number].lobby_auto_launch):
             return
-        if not Lobbies[self.lobby_number].active:
-            self.launch_button = discord.ui.Button(label="Waiting to fill", style=discord.ButtonStyle.secondary, row=0)
-        if Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and not Lobbies[self.lobby_number].drafting_heroes and not Lobbies[self.lobby_number].hero_draft_completed and not Lobbies[self.lobby_number].launched:
-            self.launch_button = discord.ui.Button(label="Begin Hero Draft", style=discord.ButtonStyle.green, row=0)
-        elif Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].drafting_heroes and not Lobbies[self.lobby_number].launched:
-            self.launch_button = discord.ui.Button(label="Waiting for draft", style=discord.ButtonStyle.secondary, row=0)
-        elif (Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].hero_draft_completed and not Lobbies[self.lobby_number].launched or
-              Lobbies[self.lobby_number].active and not distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and not Lobbies[self.lobby_number].launched):
-            self.launch_button = discord.ui.Button(label="Launch Game", style=discord.ButtonStyle.green, row=0)
-        elif Lobbies[self.lobby_number].active and distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].hero_draft_completed and Lobbies[self.lobby_number].launched:
+        elif Lobbies[self.lobby_number].launched:
             self.launch_button = discord.ui.Button(label="Already launched", style=discord.ButtonStyle.secondary, row=0)
+        elif not Lobbies[self.lobby_number].active:
+            self.launch_button = discord.ui.Button(label="Waiting to fill", style=discord.ButtonStyle.secondary, row=0)
+        elif distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and not Lobbies[self.lobby_number].drafting_heroes and not Lobbies[self.lobby_number].hero_draft_completed:
+            self.launch_button = discord.ui.Button(label="Begin Hero Draft", style=discord.ButtonStyle.green, row=0)
+        elif distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].drafting_heroes:
+            self.launch_button = discord.ui.Button(label="Waiting for draft", style=discord.ButtonStyle.secondary, row=0)
+        elif (distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft) and Lobbies[self.lobby_number].hero_draft_completed or
+              not distutils.util.strtobool(Lobbies[self.lobby_number].enable_hero_draft)):
+            self.launch_button = discord.ui.Button(label="Launch Lobby", style=discord.ButtonStyle.green, row=0)
 
         async def launch_button_callback(interaction: discord.Interaction):
             lobby_number = await get_lobby_number(interaction)
