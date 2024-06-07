@@ -205,7 +205,8 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                                          preset['AmberTeamName'], preset['EitherTeamName'], 0, "none",
                                          preset['EnableHeroDraft'], discord.Message, preset['EnableImageSend'], lobby_channel,
                                          preset['EnablePlayerDraft'], 0, 0, discord.User, discord.User,
-                                         [], discord.User, 0))
+                                         [], discord.User, 0, preset['EnableReadyUp'], 0, 0,
+                                         [], [], [], []))
             print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
 
         await update_message(lobby_number)
@@ -250,11 +251,12 @@ async def on_ready():
     Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
                                  "preset", [], [], [], [], [], [], [],
                                  0,  0,  0, discord.User, "none",
-                                 0, 0, "role", "True","True",
+                                 0, 0, "role", "True", "True",
                                  "True", "Title", "FFFFFF","FFFFFF",
                                  0, 0, 0, 0, 0, 0,
                                  "none", "True", discord.Message, "False", 0,
-                                 0, 0, 0, discord.User, discord.User, [], discord.User, 0))
+                                 0, 0, 0, discord.User, discord.User, [], discord.User, 0,
+                                 "True", 0, 0, [], [], [], []))
     print('Startup complete, awaiting command')
     print('------------------------------------------------------')
 
@@ -363,11 +365,11 @@ async def update_admin_panel(lobby_number):
     if Lobbies[lobby_number].launched == 1:
         embed = discord.Embed(title=f"Lobby {lobby_number} Admin Panel", description='Lobby is launched! DMs were sent to all players')
 
-    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nLobbyThreshold\nLobbyCooldown\nEnableHeroDraft\nEnableImageSend\nEnablePlayerDraft"
+    setting_string = "Server\nPassword\nPreset\nLobbyAutoLaunch\nLobbyAutoReset\nLobbyMessageTitle\nSapphireTeamName\nAmberTeamName\nEitherTeamName\nEnableImageSend\nLobbyThreshold\nLobbyCooldown\nEnableHeroDraft\nEnablePlayerDraft\nEnableReadyUp"
     value_string = (f"{Lobbies[lobby_number].server}\n{Lobbies[lobby_number].password}\n{Lobbies[lobby_number].preset}\n{Lobbies[lobby_number].lobby_auto_launch}\n"
                     f"{Lobbies[lobby_number].lobby_auto_reset}\n{Lobbies[lobby_number].lobby_message_title}\n{Lobbies[lobby_number].sapphire_name}\n"
-                    f"{Lobbies[lobby_number].amber_name}\n{Lobbies[lobby_number].either_name}\n{Lobbies[lobby_number].lobby_threshold}\n"
-                    f"{Lobbies[lobby_number].lobby_cooldown}\n{Lobbies[lobby_number].enable_hero_draft}\n{Lobbies[lobby_number].enable_image_send}\n{Lobbies[lobby_number].enable_player_draft}")
+                    f"{Lobbies[lobby_number].amber_name}\n{Lobbies[lobby_number].either_name}\n{Lobbies[lobby_number].enable_image_send}\n{Lobbies[lobby_number].lobby_threshold}\n"
+                    f"{Lobbies[lobby_number].lobby_cooldown}\n{Lobbies[lobby_number].enable_hero_draft}\n{Lobbies[lobby_number].enable_player_draft}\n{Lobbies[lobby_number].enable_ready_up}")
 
     embed.add_field(name='Setting', value=setting_string, inline=True)
     embed.add_field(name='Value', value=value_string, inline=True)
@@ -541,6 +543,8 @@ async def activate_lobby(lobby_number):
 
 async def launch_lobby(lobby_number):
     if not Lobbies[lobby_number].launched:
+        if distutils.util.strtobool(Lobbies[lobby_number].enable_ready_up):
+            await ready_up(lobby_number)
         await bot.change_presence(status=discord.Status.idle, activity=discord.Game(f"{BotGame}"))
         Lobbies[lobby_number].launched = 1
         await send_lobby_info(lobby_number)
@@ -815,6 +819,39 @@ async def shuffle_teams(lobby_number):
     await update_message(lobby_number)
 
 
+async def ready_up(lobby_number):
+    print(f'lobby{lobby_number}: Beginning ready up...')
+    Lobbies[lobby_number].readying = 1
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
+        Lobbies[lobby_number].sapp_players_ready.append(0)
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
+        Lobbies[lobby_number].sapp_ready_msgs.append(discord.Message)
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
+        Lobbies[lobby_number].ambr_players_ready.append(0)
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
+        Lobbies[lobby_number].ambr_ready_msgs.append(discord.Message)
+    await update_message(lobby_number)
+    await update_admin_panel(lobby_number)
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
+        await get_ready_status(Lobbies[lobby_number].sapp_players[i], lobby_number, "sapp", i)
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
+        await get_ready_status(Lobbies[lobby_number].ambr_players[i], lobby_number, "ambr", i)
+    while not Lobbies[lobby_number].all_players_ready:
+        await update_message(lobby_number)
+        await asyncio.sleep(5)
+    print(f'lobby{lobby_number}: All players are ready! Launching...')
+    Lobbies[lobby_number].readying = 0
+
+
+async def get_ready_status(player, lobby_number, team, index):
+    embed = discord.Embed(title=f"Ready up!", color=int("0B6623", 16))
+    ready_msg = await player.send(embed=embed, view=ReadyUpButton(lobby_number, team, index))
+    if team == "sapp":
+        Lobbies[lobby_number].sapp_ready_msgs[index] = ready_msg
+    else:
+        Lobbies[lobby_number].ambr_ready_msgs[index] = ready_msg
+
+
 async def send_lobby_info(lobby_number):
     print(f'lobby{lobby_number}: Sending DMs with team and connect info...')
     connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
@@ -870,6 +907,8 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].selecting_captains = 0
     Lobbies[lobby_number].hero_draft_completed = 0
     Lobbies[lobby_number].player_draft_completed = 0
+    Lobbies[lobby_number].readying = 0
+    Lobbies[lobby_number].all_players_ready = 0
     Lobbies[lobby_number].launched = 0
     Lobbies[lobby_number].drafter = discord.User
     Lobbies[lobby_number].sapp_captain = discord.User
@@ -883,6 +922,10 @@ async def reset_lobby(lobby_number):
     Lobbies[lobby_number].ambr_heroes.clear()
     Lobbies[lobby_number].player_pool.clear()
     Lobbies[lobby_number].picked_heroes.clear()
+    Lobbies[lobby_number].sapp_players_ready.clear()
+    Lobbies[lobby_number].ambr_players_ready.clear()
+    Lobbies[lobby_number].sapp_ready_msgs.clear()
+    Lobbies[lobby_number].ambr_ready_msgs.clear()
     Lobbies[lobby_number].available_heroes = Heroes[:]
     await update_message(lobby_number)
     await update_admin_panel(lobby_number)
@@ -1156,6 +1199,11 @@ class SettingModal(discord.ui.Modal):
                 await update_message(lobby_number)
                 await update_admin_panel(lobby_number)
                 return
+        elif Lobbies[lobby_number].selected_setting == "EnableReadyUp":
+            Lobbies[lobby_number].enable_ready_up = value
+            await interaction.response.send_message(f"Lobby {lobby_number} EnableReadyUp changed to {Lobbies[lobby_number].enable_ready_up}", ephemeral=True)
+            await update_admin_panel(lobby_number)
+            return
         else:
             await interaction.response.send_message(f"Setting not found!", ephemeral=True)
 
@@ -1418,6 +1466,45 @@ class LeaveButton(discord.ui.View):
             await interaction.response.send_message(f"You're not in this lobby", ephemeral=True)
 
 
+class ReadyUpButton(discord.ui.View):
+    def __init__(self, lobby_number, team, index):
+        self.lobby_number = lobby_number
+        self.team = team
+        self.index = index
+        super().__init__(timeout=None)
+        self.ready_button = discord.ui.button()
+        self.add_ready_button()
+
+    def add_ready_button(self):
+        self.ready_button = discord.ui.Button(label="Ready", style=discord.ButtonStyle.green, row=0)
+
+        async def ready_button_callback(interaction: discord.Interaction):
+            if self.team == "sapp":
+                Lobbies[self.lobby_number].sapp_players_ready[self.index] = 1
+                embed = discord.Embed(title=f"You are ready! Waiting for other players...", color=int("0B6623", 16))
+                await Lobbies[self.lobby_number].sapp_ready_msgs[self.index].edit(embed=embed, view=None)
+            else:
+                Lobbies[self.lobby_number].ambr_players_ready[self.index] = 1
+                embed = discord.Embed(title=f"You are ready! Waiting for other players...", color=int("0B6623", 16))
+                await Lobbies[self.lobby_number].ambr_ready_msgs[self.index].edit(embed=embed, view=None)
+            await interaction.response.defer()
+
+            sapp_sum = 0
+            sapp_len = len(Lobbies[self.lobby_number].sapp_players_ready)
+            for i in range(sapp_len):
+                sapp_sum += Lobbies[self.lobby_number].sapp_players_ready[i]
+            if sapp_sum == sapp_len:
+                ambr_sum = 0
+                ambr_len = len(Lobbies[self.lobby_number].ambr_players_ready)
+                for i in range(ambr_len):
+                    ambr_sum += Lobbies[self.lobby_number].ambr_players_ready[i]
+                    if ambr_sum == ambr_len:
+                        Lobbies[self.lobby_number].all_players_ready = 1
+
+        self.ready_button.callback = ready_button_callback
+        self.add_item(self.ready_button)
+
+
 class AdminButtons(discord.ui.View):
     def __init__(self, lobby_number):
         self.lobby_number = lobby_number
@@ -1563,9 +1650,11 @@ class AdminButtons(discord.ui.View):
                            discord.SelectOption(label="LobbyCooldown",
                                                 description="Change reset cooldown if LobbyAutoReset is True"),
                            discord.SelectOption(label="EnableHeroDraft",
-                                                description="When true teams will draft heros when lobby is full"),
+                                                description="Enable Hero Draft"),
                            discord.SelectOption(label="EnablePlayerDraft",
-                                                description="When true host will select two captains to draft teams")
+                                                description="Enable Captains Mode"),
+                           discord.SelectOption(label="EnableReadyUp",
+                                                description="Enable ready-up phase just before lobby launch")
                        ]
                        )
     async def select_callback(self, select, interaction):

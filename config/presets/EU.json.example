@@ -14,5 +14,6 @@
     "AmberTeamName": "East",
     "EitherTeamName": "Iron Curtain",
     "EnableHeroDraft": "True",
-    "EnablePlayerDraft": "True"
+    "EnablePlayerDraft": "True",
+    "EnableReadyUp": "True"
 }

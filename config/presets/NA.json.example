@@ -14,5 +14,6 @@
     "AmberTeamName": "Pop",
     "EitherTeamName": "Soda",
     "EnableHeroDraft": "True",
-    "EnablePlayerDraft": "True"
+    "EnablePlayerDraft": "True",
+    "EnableReadyUp": "True"
 }

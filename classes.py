@@ -5,7 +5,8 @@ class Lobby:
                  lobby_message_title, lobby_message_color, active_message_color, lobby_threshold, lobby_cooldown, sapphire_name,
                  amber_name, either_name, manual_mode, selected_setting, enable_hero_draft, draft_msg, enable_image_send, lobby_channel,
                  enable_player_draft, drafting_players, player_draft_completed, sapp_captain, ambr_captain, player_pool, selected_player,
-                 selecting_captains):
+                 selecting_captains, enable_ready_up, readying, all_players_ready, sapp_players_ready, ambr_players_ready,
+                 sapp_ready_msgs, ambr_ready_msgs):
         self.number = lobby_number
         self.message_id = message_id
         self.host = host
@@ -53,3 +54,10 @@ class Lobby:
         self.player_pool = player_pool
         self.selected_player = selected_player
         self.selecting_captains = selecting_captains
+        self.enable_ready_up = enable_ready_up
+        self.readying = readying
+        self.all_players_ready = all_players_ready
+        self.sapp_players_ready = sapp_players_ready
+        self.ambr_players_ready = ambr_players_ready
+        self.sapp_ready_msgs = sapp_ready_msgs
+        self.ambr_ready_msgs = ambr_ready_msgs
