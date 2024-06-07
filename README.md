@@ -13,6 +13,8 @@ Once a threshold is reached the bot will split the lobby members into two teams,
   - If enabled, the bot will message all players one by one to draft a hero. Draft information is updated live in the lobby message. Heroes can be set in config/heroes.json
 - Preset support
   - Presets can be made to template most available options. Allows you to easily create lobbies for different regions, games, etc.
+- Ready-Up system
+  - Force all players to ready-up before launch to reduce afks
 - Kick/Ban system
   - Bans are persistent across bot restarts and are bot-wide (not specific to a single lobby)
 - Private admin panel
@@ -104,6 +106,7 @@ Preset Settings (config/presets/*.json):
 - SapphireTeamName, AmberTeamName, and EitherTeamName - The team names for the lobby (left, right, and fill teams respectively)
 - EnableHeroDraft - Enables hero draft once the lobby fills up. Heroes are set in config/heroes.json but limited to 25.
 - EnablePlayerDraft - Enables Captains Mode/Player Draft
+- EnableReadyUp - Enable ready-up system. The bot will send a message with a button that all players must press before the lobby launches
 
 (*) Role and Channel settings accept either their name or the discord ID (right click > Copy ID if you have Discord developer mode enabled)
 
