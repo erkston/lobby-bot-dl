@@ -27,7 +27,7 @@ Hero draft:
 
 Admin panel:
 
-![Admin Panel](https://i.imgur.com/h18YMQV.png)
+![Admin Panel](https://i.imgur.com/L70ApmK.png)
 
 ### Usage
 
@@ -42,7 +42,7 @@ When a lobby is started you will receive a DM with the Admin Panel.
 
 Admin panel functions:
 
-- Proceed - when LobbyAutoLaunch is False the lobby will wait for the host to press this button before beginning the hero draft or launching the lobby. If LobbyAutoLaunch is True this button does nothing as the lobby will take these steps automatically
+- Waiting/Begin Hero Draft/Launch Lobby - when LobbyAutoLaunch is False the lobby will wait for the host to press this button to both begin the hero draft and to launch the lobby. If LobbyAutoLaunch is true, those steps will happen automatically and this button will not appear on the panel.
 - Reset Lobby - removes all players but keeps the lobby open
 - Close Lobby - closes the lobby completely
 - Shuffle Teams - Randomizes teams, if there are any fill players it will move them to a team. You can shuffle a team up until the hero draft is started
