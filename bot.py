@@ -136,7 +136,8 @@ async def lbban(ctx, user_id: discord.Option(description="20 digit User ID of th
 @bot.command(name="startlobby", description="Start a lobby")
 async def startlobby(ctx, server: discord.Option(str, description="Enter the servers address and port (address:port) "),
                      password: discord.Option(str, description="Enter the servers password"),
-                     preset: discord.Option(str, description=f"Available presets: {presets_string} (Case sensitive)")):
+                     preset: discord.Option(str, description=f"Available presets: {presets_string} (Case sensitive)"),
+                     title: discord.Option(str, description="Override the lobby message title", required=False)):
     if bot_admin_role in ctx.author.roles:
         print(f"startlobby: Received command from {ctx.author.display_name}, starting lobby...")
         selected_preset = preset
@@ -188,13 +189,18 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
         embed = discord.Embed(title=f"Starting Lobby {lobby_number} Admin Panel...")
         admin_panel_msg = await ctx.author.send(embed=embed, view=None)
 
+        if not title:
+            lobby_title = preset['LobbyMessageTitle']
+        else:
+            lobby_title = title
+
         with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
             preset = json.load(presetjsonfile)
             Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, selected_preset, [],
                                          [], [], [], [], Heroes[:], [], 0,
                                          0, 0, discord.User, "hero", 0, 0,
                                          lobby_role, preset['LobbyRolePing'], preset['LobbyAutoLaunch'], preset['LobbyAutoReset'],
-                                         preset['LobbyMessageTitle'], preset['LobbyMessageColor'], preset['ActiveMessageColor'],
+                                         lobby_title, preset['LobbyMessageColor'], preset['ActiveMessageColor'],
                                          preset['LobbyThreshold'], preset['LobbyCooldown'], preset['SapphireTeamName'],
                                          preset['AmberTeamName'], preset['EitherTeamName'], 0, "none",
                                          preset['EnableHeroDraft'], discord.Message, preset['EnableImageSend'], lobby_channel))

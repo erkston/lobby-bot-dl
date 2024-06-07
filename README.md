@@ -31,12 +31,12 @@ Admin panel:
 
 ### Usage
 
-Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET```
+Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET TITLE(optional)```
 
-![startlobby command](https://i.imgur.com/MFh1dV4.png)
+![startlobby command](https://i.imgur.com/9slORyZ.png)
 
 The Preset field is case sensitive, the command discription will tell you what presets are available.
-If no presets are added to the /config/presets/ folder, default will be the only available selection.
+There is also an optional parameter "title" that will override the lobby title from the preset .json
 
 When a lobby is started you will receive a DM with the Admin Panel.
 
