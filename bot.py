@@ -529,7 +529,8 @@ async def update_message(lobby_number):
 async def activate_lobby(lobby_number):
     if not Lobbies[lobby_number].active:
         Lobbies[lobby_number].active = 1
-        await assign_teams(lobby_number)
+        if not distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+            await assign_teams(lobby_number)
         await size_lobby(lobby_number)
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
@@ -605,8 +606,12 @@ async def draft_players(lobby_number):
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
         team_size = int(Lobbies[lobby_number].lobby_threshold) / 2
+        if team_size >= 6:
+            draft_range = team_size - 2
+        else:
+            draft_range = team_size
         first_pick = random.choice(["sapp", "ambr"])
-        for i in range(int(team_size)-1):
+        for i in range(int(draft_range)-1):
             if first_pick == "sapp":
                 await start_captain_pick(lobby_number, "sapp")
                 await start_captain_pick(lobby_number, "ambr")
@@ -614,6 +619,7 @@ async def draft_players(lobby_number):
                 await start_captain_pick(lobby_number, "ambr")
                 await start_captain_pick(lobby_number, "sapp")
 
+        await assign_teams(lobby_number)
         Lobbies[lobby_number].player_pool.clear()
         Lobbies[lobby_number].drafting_players = 0
         Lobbies[lobby_number].player_draft_completed = 1
@@ -812,14 +818,23 @@ async def get_lobby_number(interaction):
 
 
 async def assign_teams(lobby_number):
-    print(f'lobby{lobby_number}: Assigning fill players to teams')
-    random.shuffle(Lobbies[lobby_number].fill_players)
-    for player in Lobbies[lobby_number].fill_players:
-        if len(Lobbies[lobby_number].sapp_players) < int(Lobbies[lobby_number].lobby_threshold)/2:
-            Lobbies[lobby_number].sapp_players.append(player)
-        else:
-            Lobbies[lobby_number].ambr_players.append(player)
-    Lobbies[lobby_number].fill_players.clear()
+    if not distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+        print(f'lobby{lobby_number}: Assigning fill players to teams')
+        random.shuffle(Lobbies[lobby_number].fill_players)
+        for player in Lobbies[lobby_number].fill_players:
+            if len(Lobbies[lobby_number].sapp_players) < int(Lobbies[lobby_number].lobby_threshold)/2:
+                Lobbies[lobby_number].sapp_players.append(player)
+            else:
+                Lobbies[lobby_number].ambr_players.append(player)
+        Lobbies[lobby_number].fill_players.clear()
+    else:
+        print(f'lobby{lobby_number}: Assigning any remaining players to teams')
+        random.shuffle(Lobbies[lobby_number].player_pool)
+        for player in Lobbies[lobby_number].player_pool:
+            if len(Lobbies[lobby_number].sapp_players) < int(Lobbies[lobby_number].lobby_threshold) / 2:
+                Lobbies[lobby_number].sapp_players.append(player)
+            else:
+                Lobbies[lobby_number].ambr_players.append(player)
 
 
 async def shuffle_teams(lobby_number):
