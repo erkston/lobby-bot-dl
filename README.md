@@ -39,9 +39,9 @@ Admin panel:
 
 ### Usage
 
-Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET TITLE(optional)```
+Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET TITLE(optional) DESCRIPTION(optional)```
 
-![startlobby command](https://i.imgur.com/9slORyZ.png)
+![startlobby command](https://i.imgur.com/HPeYFKL.png)
 
 The Preset field is case sensitive, the command discription will tell you what presets are available.
 There is also an optional parameter "title" that will override the lobby title from the preset .json

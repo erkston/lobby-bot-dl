@@ -137,7 +137,8 @@ async def lbban(ctx, user_id: discord.Option(description="20 digit User ID of th
 async def startlobby(ctx, server: discord.Option(str, description="Enter the servers address and port (address:port) "),
                      password: discord.Option(str, description="Enter the servers password"),
                      preset: discord.Option(str, description=f"Available presets: {presets_string} (Case sensitive)"),
-                     title: discord.Option(str, description="Override the lobby message title", required=False)):
+                     title: discord.Option(str, description="Override the lobby message title", required=False),
+                     description: discord.Option(str, description="Optional lobby description", required=False)):
     if bot_admin_role in ctx.author.roles:
         print(f"startlobby: Received command from {ctx.author.display_name}, starting lobby...")
         selected_preset = preset
@@ -196,7 +197,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
 
         with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
             preset = json.load(presetjsonfile)
-            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, selected_preset, [],
+            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, selected_preset, description, [],
                                          [], [], [], [], Heroes[:], [], 0,
                                          0, 0, discord.User, "hero", 0, 0,
                                          lobby_role, preset['LobbyRolePing'], preset['LobbyAutoLaunch'], preset['LobbyAutoReset'],
@@ -249,7 +250,7 @@ async def on_ready():
                     bot_admin_role = role
                     print(f'Bot Admin Role found: "{bot_admin_role.name}"')
     Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
-                                 "preset", [], [], [], [], [], [], [],
+                                 "preset", "desc", [], [], [], [], [], [], [],
                                  0,  0,  0, discord.User, "none",
                                  0, 0, "role", "True", "True",
                                  "True", "Title", "FFFFFF","FFFFFF",
@@ -426,6 +427,8 @@ async def update_message(lobby_number):
                                   description='Captains Mode, player draft will start when the lobby is full. '
                                               'Currently ' + str(current_lobby_size) + '/' + str(Lobbies[lobby_number].lobby_threshold) + ' players',
                                   color=int(Lobbies[lobby_number].lobby_message_color, 16))
+            if Lobbies[lobby_number].description:
+                embed.add_field(name="", value=Lobbies[lobby_number].description, inline=False)
             embed.add_field(name="Players", value=player_pool_string, inline=True)
             embed.add_field(name='\u200b', value='\u200b', inline=False)
             embed.timestamp = datetime.datetime.now()
@@ -438,6 +441,8 @@ async def update_message(lobby_number):
                               description='Join using buttons below, server info will be sent via DM when the lobby is full. '
                                           'Currently ' + str(current_lobby_size) + '/' + str(Lobbies[lobby_number].lobby_threshold) + ' players',
                               color=int(Lobbies[lobby_number].lobby_message_color, 16))
+        if Lobbies[lobby_number].description:
+            embed.add_field(name="", value=Lobbies[lobby_number].description, inline=False)
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
@@ -486,7 +491,8 @@ async def update_message(lobby_number):
             if not not_ready_string:
                 not_ready_string = "None"
             embed = discord.Embed(title=f"Ready up! Check your DMs", description=f'Not ready: {not_ready_string}')
-
+        if Lobbies[lobby_number].description:
+            embed.add_field(name="", value=Lobbies[lobby_number].description, inline=False)
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
@@ -505,6 +511,8 @@ async def update_message(lobby_number):
     elif current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold) and Lobbies[lobby_number].active and Lobbies[lobby_number].launched:
         print(f'lobby{lobby_number}: Lobby activated and launched, displaying final player list')
         embed = discord.Embed(title=f'Lobby has started!', description='Check your DMs for connect info', color=int(Lobbies[lobby_number].active_message_color, 16))
+        if Lobbies[lobby_number].description:
+            embed.add_field(name="", value=Lobbies[lobby_number].description, inline=False)
         embed.add_field(name=Lobbies[lobby_number].sapphire_name, value=sapp_players_string, inline=True)
         embed.add_field(name=Lobbies[lobby_number].amber_name, value=ambr_players_string, inline=True)
         embed.add_field(name='\u200b', value='\u200b', inline=False)
