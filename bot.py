@@ -1032,13 +1032,15 @@ class DMmodal(discord.ui.Modal):
     async def callback(self, interaction):
         lobby_number = await get_lobby_number(interaction)
         text = self.children[0].value
+        await interaction.response.send_message(f"Sending DM to Lobby {lobby_number} players: \n {text}", ephemeral=True)
         for player in Lobbies[lobby_number].sapp_players:
             await player.send(f"{text}")
         for player in Lobbies[lobby_number].ambr_players:
             await player.send(f"{text}")
         for player in Lobbies[lobby_number].fill_players:
             await player.send(f"{text}")
-        await interaction.response.send_message(f"Sent DM to Lobby {lobby_number} players: \n {text}", ephemeral=True)
+        for player in Lobbies[lobby_number].player_pool:
+            await player.send(f"{text}")
 
 
 class KickModal(discord.ui.Modal):
