@@ -502,7 +502,7 @@ async def update_message(lobby_number):
         embed.set_footer(text=f'Lobby {lobby_number} • Hosted by {Lobbies[lobby_number].host.display_name} • Last updated')
         lobby_message = await Lobbies[lobby_number].lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
 
-        if Lobbies[lobby_number].active and not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].drafting_players and not Lobbies[lobby_number].player_draft_completed and not Lobbies[lobby_number].launched:
+        if Lobbies[lobby_number].active and not Lobbies[lobby_number].readying and not Lobbies[lobby_number].drafting_heroes and not Lobbies[lobby_number].hero_draft_completed and not Lobbies[lobby_number].drafting_players and not Lobbies[lobby_number].player_draft_completed and not Lobbies[lobby_number].launched:
             await lobby_message.edit(embed=embed, view=LeaveButton(timeout=None))
             return
         await lobby_message.edit(embed=embed, view=None)
