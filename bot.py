@@ -854,6 +854,7 @@ async def ready_up(lobby_number):
         await get_ready_status(Lobbies[lobby_number].ambr_players[i], lobby_number, "ambr", i)
     while not Lobbies[lobby_number].all_players_ready:
         await update_message(lobby_number)
+        await check_ready_status(lobby_number)
         await asyncio.sleep(5)
     print(f'lobby{lobby_number}: All players are ready! Launching...')
     Lobbies[lobby_number].readying = 0
@@ -866,6 +867,20 @@ async def get_ready_status(player, lobby_number, team, index):
         Lobbies[lobby_number].sapp_ready_msgs[index] = ready_msg
     else:
         Lobbies[lobby_number].ambr_ready_msgs[index] = ready_msg
+
+
+async def check_ready_status(lobby_number):
+    sapp_sum = 0
+    sapp_len = len(Lobbies[lobby_number].sapp_players_ready)
+    for i in range(sapp_len):
+        sapp_sum += Lobbies[lobby_number].sapp_players_ready[i]
+    if sapp_sum == sapp_len:
+        ambr_sum = 0
+        ambr_len = len(Lobbies[lobby_number].ambr_players_ready)
+        for i in range(ambr_len):
+            ambr_sum += Lobbies[lobby_number].ambr_players_ready[i]
+            if ambr_sum == ambr_len:
+                Lobbies[lobby_number].all_players_ready = 1
 
 
 async def send_lobby_info(lobby_number):
@@ -1506,18 +1521,7 @@ class ReadyUpButton(discord.ui.View):
                 embed = discord.Embed(title=f"You are ready! Waiting for other players...", color=int("0B6623", 16))
                 await Lobbies[self.lobby_number].ambr_ready_msgs[self.index].edit(embed=embed, view=None)
             await interaction.response.defer()
-
-            sapp_sum = 0
-            sapp_len = len(Lobbies[self.lobby_number].sapp_players_ready)
-            for i in range(sapp_len):
-                sapp_sum += Lobbies[self.lobby_number].sapp_players_ready[i]
-            if sapp_sum == sapp_len:
-                ambr_sum = 0
-                ambr_len = len(Lobbies[self.lobby_number].ambr_players_ready)
-                for i in range(ambr_len):
-                    ambr_sum += Lobbies[self.lobby_number].ambr_players_ready[i]
-                    if ambr_sum == ambr_len:
-                        Lobbies[self.lobby_number].all_players_ready = 1
+            await check_ready_status(self.lobby_number)
 
         self.ready_button.callback = ready_button_callback
         self.add_item(self.ready_button)
