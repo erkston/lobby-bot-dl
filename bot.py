@@ -530,6 +530,7 @@ async def activate_lobby(lobby_number):
     if not Lobbies[lobby_number].active:
         Lobbies[lobby_number].active = 1
         await assign_teams(lobby_number)
+        await size_lobby(lobby_number)
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
 
@@ -613,6 +614,7 @@ async def draft_players(lobby_number):
                 await start_captain_pick(lobby_number, "ambr")
                 await start_captain_pick(lobby_number, "sapp")
 
+        Lobbies[lobby_number].player_pool.clear()
         Lobbies[lobby_number].drafting_players = 0
         Lobbies[lobby_number].player_draft_completed = 1
         print(f'lobby{lobby_number}: Player draft completed!')
@@ -923,19 +925,28 @@ async def update_all_lobby_messages():
 
 
 async def size_lobby(lobby_number):
-    if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].hero_draft_completed:
+    if Lobbies[lobby_number].drafting_heroes or Lobbies[lobby_number].drafting_players or Lobbies[lobby_number].hero_draft_completed:
         return
-    current_lobby_size = len(Lobbies[lobby_number].sapp_players) + len(Lobbies[lobby_number].ambr_players) + len(Lobbies[lobby_number].fill_players)
-    if current_lobby_size <= int(Lobbies[lobby_number].lobby_threshold):
-        return
-    team_size = int(Lobbies[lobby_number].lobby_threshold)/2
-    pop_index = int(team_size) - 1
-    while len(Lobbies[lobby_number].sapp_players) > team_size:
-        print(f'lobby{lobby_number}: {Lobbies[lobby_number].sapphire_name} too big, player {Lobbies[lobby_number].sapp_players[pop_index].display_name} kicked')
-        Lobbies[lobby_number].sapp_players.pop(pop_index)
-    while len(Lobbies[lobby_number].ambr_players) > team_size:
-        print(f'lobby{lobby_number}: {Lobbies[lobby_number].amber_name} too big, player {Lobbies[lobby_number].ambr_players[pop_index].display_name} kicked')
-        Lobbies[lobby_number].ambr_players.pop(pop_index)
+    if not distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
+        current_lobby_size = len(Lobbies[lobby_number].sapp_players) + len(Lobbies[lobby_number].ambr_players) + len(Lobbies[lobby_number].fill_players)
+        if current_lobby_size <= int(Lobbies[lobby_number].lobby_threshold):
+            return
+        team_size = int(Lobbies[lobby_number].lobby_threshold)/2
+        pop_index = int(team_size) - 1
+        while len(Lobbies[lobby_number].sapp_players) > team_size:
+            print(f'lobby{lobby_number}: {Lobbies[lobby_number].sapphire_name} too big, player {Lobbies[lobby_number].sapp_players[pop_index].display_name} kicked')
+            Lobbies[lobby_number].sapp_players.pop(pop_index)
+        while len(Lobbies[lobby_number].ambr_players) > team_size:
+            print(f'lobby{lobby_number}: {Lobbies[lobby_number].amber_name} too big, player {Lobbies[lobby_number].ambr_players[pop_index].display_name} kicked')
+            Lobbies[lobby_number].ambr_players.pop(pop_index)
+    else:
+        current_lobby_size = len(Lobbies[lobby_number].player_pool)
+        if current_lobby_size <= int(Lobbies[lobby_number].lobby_threshold):
+            return
+        pop_index = int(Lobbies[lobby_number].lobby_threshold) - 1
+        while len(Lobbies[lobby_number].sapp_players) > Lobbies[lobby_number].lobby_threshold:
+            print(f'lobby{lobby_number}: Player pool too big, player {Lobbies[lobby_number].player_pool[pop_index].display_name} kicked')
+            Lobbies[lobby_number].player_pool.pop(pop_index)
 
 
 async def reset_lobby(lobby_number):
