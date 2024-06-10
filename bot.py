@@ -946,17 +946,20 @@ async def size_lobby(lobby_number):
         pop_index = int(team_size) - 1
         while len(Lobbies[lobby_number].sapp_players) > team_size:
             print(f'lobby{lobby_number}: {Lobbies[lobby_number].sapphire_name} too big, player {Lobbies[lobby_number].sapp_players[pop_index].display_name} kicked')
+            await Lobbies[lobby_number].sapp_players[pop_index].send("Sorry, the lobby was too big and I had to remove you :(")
             Lobbies[lobby_number].sapp_players.pop(pop_index)
         while len(Lobbies[lobby_number].ambr_players) > team_size:
             print(f'lobby{lobby_number}: {Lobbies[lobby_number].amber_name} too big, player {Lobbies[lobby_number].ambr_players[pop_index].display_name} kicked')
+            await Lobbies[lobby_number].ambr_players[pop_index].send("Sorry, the lobby was too big and I had to remove you :(")
             Lobbies[lobby_number].ambr_players.pop(pop_index)
     else:
         current_lobby_size = len(Lobbies[lobby_number].player_pool)
         if current_lobby_size <= int(Lobbies[lobby_number].lobby_threshold):
             return
         pop_index = int(Lobbies[lobby_number].lobby_threshold) - 1
-        while len(Lobbies[lobby_number].sapp_players) > Lobbies[lobby_number].lobby_threshold:
+        while len(Lobbies[lobby_number].player_pool) > int(Lobbies[lobby_number].lobby_threshold):
             print(f'lobby{lobby_number}: Player pool too big, player {Lobbies[lobby_number].player_pool[pop_index].display_name} kicked')
+            await Lobbies[lobby_number].player_pool[pop_index].send("Sorry, the lobby was too big and I had to remove you :(")
             Lobbies[lobby_number].player_pool.pop(pop_index)
 
 
