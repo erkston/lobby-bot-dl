@@ -1267,6 +1267,11 @@ class SettingModal(discord.ui.Modal):
             await interaction.response.send_message(f"Lobby {lobby_number} EnableReadyUp changed to {Lobbies[lobby_number].enable_ready_up}", ephemeral=True)
             await update_admin_panel(lobby_number)
             return
+        elif Lobbies[lobby_number].selected_setting == "LobbyDescription":
+            Lobbies[lobby_number].description = value
+            await interaction.response.send_message(f"Lobby {lobby_number} description changed to '{Lobbies[lobby_number].description}'", ephemeral=True)
+            await update_message(lobby_number)
+            return
         else:
             await interaction.response.send_message(f"Setting not found!", ephemeral=True)
 
@@ -1688,6 +1693,8 @@ class AdminButtons(discord.ui.View):
                                                 description="Change auto-reset behavior"),
                            discord.SelectOption(label="LobbyMessageTitle",
                                                 description="Change the title of the lobby message"),
+                           discord.SelectOption(label="LobbyDescription",
+                                                description="Change the lobby message description"),
                            discord.SelectOption(label="EnableImageSend",
                                                 description="When true will send an image to players with lobby connect info"),
                            discord.SelectOption(label="SapphireTeamName",
