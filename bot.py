@@ -907,12 +907,11 @@ async def check_ready_status(lobby_number):
 
 async def send_lobby_info(lobby_number):
     print(f'lobby{lobby_number}: Sending DMs with team and connect info...')
-    connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "`"])
+    connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "; password ", str(Lobbies[lobby_number].password) ,"`"])
     for player in Lobbies[lobby_number].sapp_players:
         with open("config/banner_sapp.png", "rb") as bansa:
             embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
             embed.add_field(name='Connect info', value=connect_string, inline=False)
-            embed.add_field(name='Password', value=Lobbies[lobby_number].password, inline=False)
             if distutils.util.strtobool(Lobbies[lobby_number].enable_image_send):
                 file = discord.File(bansa, filename="config/banner_sapp.png")
             else:
@@ -922,12 +921,12 @@ async def send_lobby_info(lobby_number):
         with open("config/banner_ambr.png", "rb") as banam:
             embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].amber_name}",color=int("FFBF00", 16))
             embed.add_field(name='Connect info', value=connect_string, inline=False)
-            embed.add_field(name='Password', value=Lobbies[lobby_number].password, inline=False)
             if distutils.util.strtobool(Lobbies[lobby_number].enable_image_send):
                 file = discord.File(banam, filename="config/banner_sapp.png")
             else:
                 file = None
         await player.send(embed=embed, file=file)
+
 
 
 async def update_all_lobby_messages():
