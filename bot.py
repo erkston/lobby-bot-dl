@@ -529,6 +529,7 @@ async def update_message(lobby_number):
 async def activate_lobby(lobby_number):
     if not Lobbies[lobby_number].active:
         Lobbies[lobby_number].active = 1
+        await update_message(lobby_number)
         if not distutils.util.strtobool(Lobbies[lobby_number].enable_player_draft):
             await assign_teams(lobby_number)
         await size_lobby(lobby_number)
