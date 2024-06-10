@@ -895,11 +895,11 @@ async def get_ready_status(player, lobby_number, team, index):
 
 
 async def check_ready_status(lobby_number):
-    for ready in Lobbies[lobby_number].sapp_players_ready:
-        if not ready:
+    for i in range(len(Lobbies[lobby_number].sapp_players)):
+        if not Lobbies[lobby_number].sapp_players_ready[i]:
             return
-    for ready in Lobbies[lobby_number].ambr_players_ready:
-        if not ready:
+    for i in range(len(Lobbies[lobby_number].ambr_players)):
+        if not Lobbies[lobby_number].ambr_players_ready[i]:
             return
     Lobbies[lobby_number].readying = 0
     Lobbies[lobby_number].all_players_ready = 1
@@ -907,7 +907,7 @@ async def check_ready_status(lobby_number):
 
 async def send_lobby_info(lobby_number):
     print(f'lobby{lobby_number}: Sending DMs with team and connect info...')
-    connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "; password ", str(Lobbies[lobby_number].password) ,"`"])
+    connect_string = "".join(["`connect ", str(Lobbies[lobby_number].server), "; password ", str(Lobbies[lobby_number].password),"`"])
     for player in Lobbies[lobby_number].sapp_players:
         with open("config/banner_sapp.png", "rb") as bansa:
             embed = discord.Embed(title=f"You are on team {Lobbies[lobby_number].sapphire_name}", color=int("0F52BA", 16))
@@ -926,7 +926,6 @@ async def send_lobby_info(lobby_number):
             else:
                 file = None
         await player.send(embed=embed, file=file)
-
 
 
 async def update_all_lobby_messages():
