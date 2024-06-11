@@ -44,7 +44,7 @@ Start a lobby using ```/startlobby SERVER:PORT PASSWORD PRESET TITLE(optional) D
 ![startlobby command](https://i.imgur.com/HPeYFKL.png)
 
 The Preset field is case sensitive, the command discription will tell you what presets are available.
-There is also an optional parameter "title" that will override the lobby title from the preset .json
+There are also optional parameters for "title" (overrides the lobby title) and "description" (adds a short description to the lobby)
 
 When a lobby is started you will receive a DM with the Admin Panel.
 
