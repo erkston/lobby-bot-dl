@@ -7,6 +7,7 @@ from distutils import util
 import random
 from zoneinfo import ZoneInfo
 import discord
+from discord.ext import tasks
 import json
 import re
 import os
@@ -258,8 +259,16 @@ async def on_ready():
                                  "none", "True", discord.Message, "False", 0,
                                  0, 0, 0, discord.User, discord.User, [], discord.User, 0,
                                  "True", 0, 0, [], [], [], []))
+
+    message_refresher.start()
+
     print('Startup complete, awaiting command')
     print('------------------------------------------------------')
+
+
+@tasks.loop(minutes=1)
+async def message_refresher():
+    await update_all_lobby_messages()
 
 
 async def initialize_lobby(lobby_number, lobby_role, lobby_role_ping, lobby_channel):
