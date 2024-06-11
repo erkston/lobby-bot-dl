@@ -1521,6 +1521,10 @@ class CMButton(discord.ui.View):
             await update_message(lobby_number)
             return
         else:
+            current_lobby_size = len(Lobbies[lobby_number].player_pool)
+            if current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold):
+                await interaction.response.send_message(f"Lobby is already full, sorry!", ephemeral=True)
+                return
             Lobbies[lobby_number].player_pool.append(interactor)
             await interaction.response.send_message(f"Added to lobby", ephemeral=True)
             await update_message(lobby_number)
