@@ -1304,7 +1304,7 @@ class LobbyButtons(discord.ui.View):
                 await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
                 return
             if interactor in Lobbies[lobby_number].fill_players:
-                await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
+                await interaction.response.send_message(f"You are already randoming team", ephemeral=True)
                 return
 
             interactor_already_here = False
@@ -1316,7 +1316,10 @@ class LobbyButtons(discord.ui.View):
                 await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
                 await update_message(lobby_number)
                 return
-
+            current_lobby_size = len(Lobbies[lobby_number].sapp_players) + len(Lobbies[lobby_number].ambr_players) + len(Lobbies[lobby_number].fill_players)
+            if current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold):
+                await interaction.response.send_message(f"Lobby is already full, sorry!", ephemeral=True)
+                return
             if len(Lobbies[lobby_number].sapp_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
                 await interaction.response.send_message(f"{Lobbies[lobby_number].sapphire_name} is full, please join a different team", ephemeral=True)
                 return
@@ -1343,7 +1346,7 @@ class LobbyButtons(discord.ui.View):
                 await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
                 return
             if interactor in Lobbies[lobby_number].fill_players:
-                await interaction.response.send_message(f"You are already filling teams", ephemeral=True)
+                await interaction.response.send_message(f"You are already randoming team", ephemeral=True)
                 return
 
             interactor_already_here = False
@@ -1355,7 +1358,10 @@ class LobbyButtons(discord.ui.View):
                 await interaction.response.send_message(f"Removed from {Lobbies[lobby_number].amber_name}", ephemeral=True)
                 await update_message(lobby_number)
                 return
-
+            current_lobby_size = len(Lobbies[lobby_number].sapp_players) + len(Lobbies[lobby_number].ambr_players) + len(Lobbies[lobby_number].fill_players)
+            if current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold):
+                await interaction.response.send_message(f"Lobby is already full, sorry!", ephemeral=True)
+                return
             if len(Lobbies[lobby_number].ambr_players) == int(Lobbies[lobby_number].lobby_threshold)/2:
                 await interaction.response.send_message(f"{Lobbies[lobby_number].amber_name} is full, please join a different team", ephemeral=True)
                 return
@@ -1384,16 +1390,25 @@ class LobbyButtons(discord.ui.View):
             if interactor in Lobbies[lobby_number].ambr_players:
                 await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
                 return
+
+            interactor_already_here = False
+            for i in range(len(Lobbies[lobby_number].fill_players)):
+                if interactor.id == Lobbies[lobby_number].fill_players[i].id:
+                    interactor_already_here = True
+                    Lobbies[lobby_number].fill_players.pop(i)
+            if interactor_already_here:
+                await interaction.response.send_message(f"Removed from random team", ephemeral=True)
+                await update_message(lobby_number)
+                return
+            current_lobby_size = len(Lobbies[lobby_number].sapp_players) + len(Lobbies[lobby_number].ambr_players) + len(Lobbies[lobby_number].fill_players)
+            if current_lobby_size >= int(Lobbies[lobby_number].lobby_threshold):
+                await interaction.response.send_message(f"Lobby is already full, sorry!", ephemeral=True)
+                return
             if interactor not in Lobbies[lobby_number].fill_players:
                 Lobbies[lobby_number].fill_players.append(interactor)
-                await interaction.response.send_message(f"Added to fill", ephemeral=True)
+                await interaction.response.send_message(f"Added to random team", ephemeral=True)
                 await update_message(lobby_number)
-            else:
-                for i in range(len(Lobbies[lobby_number].fill_players)):
-                    if interactor.id == Lobbies[lobby_number].fill_players[i].id:
-                        del Lobbies[lobby_number].fill_players[i]
-                await interaction.response.send_message(f"Removed from fill", ephemeral=True)
-                await update_message(lobby_number)
+
         self.fill_button.callback = fill_button_callback
         self.add_item(self.fill_button)
 
