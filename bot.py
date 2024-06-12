@@ -22,7 +22,7 @@ BotGame = config['BotGame']
 BotAdminRole = config['BotAdminRole']
 
 
-version = "v0.3.17"
+version = "v0.3.18"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
