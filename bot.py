@@ -616,7 +616,7 @@ async def draft_players(lobby_number):
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
         team_size = int(Lobbies[lobby_number].lobby_threshold) / 2
-        if team_size >= 6:
+        if team_size >= 8:
             draft_range = team_size - 2
         else:
             draft_range = team_size
