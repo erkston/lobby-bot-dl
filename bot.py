@@ -588,17 +588,18 @@ async def launch_lobby(lobby_number):
         await update_message(lobby_number)
         await asyncio.sleep(convert_to_seconds(Lobbies[lobby_number].lobby_cooldown))
         print(f'lobby{lobby_number}: LobbyCooldown ({Lobbies[lobby_number].lobby_cooldown}) has passed since lobby was started')
-        if Lobbies[lobby_number].manual_mode:
-            print(f'lobby{lobby_number}: Admin has previously manually reset this lobby, doing nothing')
-            return
-        if distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_reset):
-            print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, resetting...')
-            await reset_lobby(lobby_number)
-            return
-        else:
+        if not distutils.util.strtobool(Lobbies[lobby_number].lobby_auto_reset):
             print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, closing lobby...')
             await close_lobby(lobby_number)
             return
+        else:
+            if Lobbies[lobby_number].manual_mode:
+                print(f'lobby{lobby_number}: Admin has previously manually reset this lobby, doing nothing')
+                return
+            else:
+                print(f'lobby{lobby_number}: LobbyAutoReset is {Lobbies[lobby_number].lobby_auto_reset}, resetting...')
+                await reset_lobby(lobby_number)
+                return
     else:
         print(f'lobby{lobby_number}: Lobby was already launched, doing nothing...')
         return
