@@ -890,7 +890,7 @@ async def ready_up(lobby_number):
     while not Lobbies[lobby_number].all_players_ready:
         await update_message(lobby_number)
         await check_ready_status(lobby_number)
-        await asyncio.sleep(5)
+        await asyncio.sleep(3)
     print(f'lobby{lobby_number}: All players are ready! Launching...')
 
 
