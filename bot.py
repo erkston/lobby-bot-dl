@@ -71,6 +71,9 @@ class Bot(discord.Bot):
         print(f'Shutting down {bot.user}...')
         print("Cleaning up messages...")
         while len(Lobbies) > 1:
+            if not await is_message_deleted(Lobbies[1].lobby_channel, Lobbies[1].ping_message_id):
+                ping_message = await Lobbies[1].lobby_channel.fetch_message(Lobbies[1].ping_message_id)
+                await ping_message.delete()
             if not await is_message_deleted(Lobbies[1].lobby_channel, Lobbies[1].message_id):
                 lobby_message = await Lobbies[1].lobby_channel.fetch_message(Lobbies[1].message_id)
                 await lobby_message.delete()
@@ -185,7 +188,9 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                         if channel.name == LobbyChannel:
                             lobby_channel = channel
                             print(f'lobby{lobby_number}: Lobby channel found #{lobby_channel.name}')
-        lobby_message = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(preset['LobbyRolePing']), lobby_channel)
+        lobby_msgs = await initialize_lobby(lobby_number, lobby_role, distutils.util.strtobool(preset['LobbyRolePing']), lobby_channel)
+        lobby_message = lobby_msgs[0]
+        ping_message = lobby_msgs[1]
         await ctx.respond(f'Lobby #{lobby_number} started', ephemeral=True)
 
         embed = discord.Embed(title=f"Starting Lobby {lobby_number} Admin Panel...")
@@ -198,7 +203,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
 
         with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
             preset = json.load(presetjsonfile)
-            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, server, password, selected_preset, description, [],
+            Lobbies.append(classes.Lobby(lobby_number, lobby_message.id, ctx.author, admin_panel_msg.id, ping_message.id, server, password, selected_preset, description, [],
                                          [], [], [], [], Heroes[:], [], 0,
                                          0, 0, discord.User, "hero", 0, 0,
                                          lobby_role, preset['LobbyRolePing'], preset['LobbyAutoLaunch'], preset['LobbyAutoReset'],
@@ -250,7 +255,7 @@ async def on_ready():
                 if role.name == BotAdminRole:
                     bot_admin_role = role
                     print(f'Bot Admin Role found: "{bot_admin_role.name}"')
-    Lobbies.append(classes.Lobby(0, 0, discord.User, 0, "0.0.0.0", "pass",
+    Lobbies.append(classes.Lobby(0, 0, discord.User, 0, discord.Message, "0.0.0.0", "pass",
                                  "preset", "desc", [], [], [], [], [], [], [],
                                  0,  0,  0, discord.User, "none",
                                  0, 0, "role", "True", "True",
@@ -275,13 +280,15 @@ async def initialize_lobby(lobby_number, lobby_role, lobby_role_ping, lobby_chan
     print(f'lobby{lobby_number}: Initializing lobby message')
     if lobby_role_ping:
         print(f'lobby{lobby_number}: LobbyRolePing is {lobby_role_ping}, sending ping')
-        await lobby_channel.send(f'{lobby_role.mention}')
+        ping_message = await lobby_channel.send(f'{lobby_role.mention}')
+    else:
+        ping_message = discord.Message
     embed = discord.Embed(title='Reticulating Splines...', color=0xb4aba0)
     lobby_message = await lobby_channel.send(embed=embed)
     await bot.change_presence(status=discord.Status.online,
                               activity=discord.Activity(type=discord.ActivityType.listening,
                                                         name=f"#{lobby_channel.name}"))
-    return lobby_message
+    return [lobby_message, ping_message]
 
 
 async def update_admin_panel(lobby_number):
@@ -813,7 +820,7 @@ async def remove_selected_hero(lobby_number):
 
 async def get_lobby_number(interaction):
     global Lobbies
-    for i in range (len(Lobbies)):
+    for i in range(len(Lobbies)):
         if interaction.message.id == Lobbies[i].message_id:
             lobby_number = Lobbies[i].number
             print(f'lobby{lobby_number}: Received lobby button press from {interaction.user.display_name}')
@@ -1017,6 +1024,9 @@ async def reset_lobby(lobby_number):
 
 
 async def close_lobby(lobby_number):
+    if not await is_message_deleted(Lobbies[lobby_number].lobby_channel, Lobbies[lobby_number].ping_message_id):
+        ping_message = await Lobbies[lobby_number].lobby_channel.fetch_message(Lobbies[lobby_number].ping_message_id)
+        await ping_message.delete()
     if not await is_message_deleted(Lobbies[lobby_number].lobby_channel, Lobbies[lobby_number].message_id):
         lobby_message = await Lobbies[lobby_number].lobby_channel.fetch_message(Lobbies[lobby_number].message_id)
         await lobby_message.delete()
@@ -1080,6 +1090,8 @@ async def is_message_deleted(channel, message_id):
     except AttributeError:
         return True
     except discord.errors.NotFound:
+        return True
+    except discord.errors.HTTPException:
         return True
 
 
