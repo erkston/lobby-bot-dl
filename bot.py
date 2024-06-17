@@ -137,7 +137,7 @@ async def lbban(ctx, user_id: discord.Option(description="20 digit User ID of th
 @bot.command(name="startlobby", description="Start a lobby")
 async def startlobby(ctx, server: discord.Option(str, description="Enter the servers address and port (address:port) "),
                      password: discord.Option(str, description="Enter the servers password"),
-                     preset: discord.Option(str, description=f"Available presets: {presets_string} (Case sensitive)"),
+                     preset: discord.Option(str, description=f"Presets: {presets_string}"),
                      title: discord.Option(str, description="Override the lobby message title", required=False),
                      description: discord.Option(str, description="Optional lobby description", required=False)):
     if bot_admin_role in ctx.author.roles:
@@ -147,7 +147,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             print(f"startlobby: Found Selected preset: {selected_preset}")
         else:
             print(f"startlobby: Could not find selected preset: {selected_preset}, aborting command")
-            await ctx.respond("Could not find that preset, please try again", ephemeral=True)
+            await ctx.respond("Could not find that preset, please try again. Note that preset names are case sensitive!", ephemeral=True)
             return
         global LobbyCount, Lobbies, Heroes
         LobbyCount += 1
