@@ -28,7 +28,7 @@ utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
-lbcomCommandList = ["ReloadPresets", "ReloadHeroes"]
+lbcomCommandList = ["ReloadPresets", "ReloadHeroes", "FullReset"]
 
 
 def load_bans():
@@ -67,8 +67,6 @@ load_heroes()
 
 class Bot(discord.Bot):
     async def cleanup(self):
-        print('------------------------------------------------------')
-        print(f'Shutting down {bot.user}...')
         print("Cleaning up messages...")
         while len(Lobbies) > 1:
             if not await is_message_deleted(Lobbies[1].lobby_channel, Lobbies[1].ping_message_id):
@@ -114,6 +112,15 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
             load_heroes()
             await ctx.respond(f'Heroes reloaded. Available heroes: {heroes_string}', ephemeral=True)
             print(f'{ctx.author.display_name} reloaded heroes. Available heroes: {heroes_string}')
+
+        elif command.casefold() == "fullreset":
+            await ctx.respond(f'Closing all lobbies and resetting, please wait 10 seconds before starting a new lobby', ephemeral=True)
+            global LobbyCount
+            await bot.cleanup()
+            Lobbies.clear()
+            LobbyCount = 0
+            await add_dummy_lobby()
+            print(f'{ctx.author.display_name} executed full reset')
 
         else:
             await ctx.respond(f'Command not found', ephemeral=True)
@@ -258,15 +265,8 @@ async def on_ready():
                 if role.name == BotAdminRole:
                     bot_admin_role = role
                     print(f'Bot Admin Role found: "{bot_admin_role.name}"')
-    Lobbies.append(classes.Lobby(0, 0, discord.User, 0, discord.Message, "0.0.0.0", "pass",
-                                 "preset", "desc", [], [], [], [], [], [], [],
-                                 0,  0,  0, discord.User, "none",
-                                 0, 0, "role", "True", "True",
-                                 "True", "Title", "FFFFFF","FFFFFF",
-                                 0, 0, 0, 0, 0, 0,
-                                 "none", "True", discord.Message, "False", 0,
-                                 0, 0, 0, discord.User, discord.User, [], discord.User, 0,
-                                 "True", 0, 0, [], [], [], []))
+
+    await add_dummy_lobby()
 
     message_refresher.start()
 
@@ -277,6 +277,18 @@ async def on_ready():
 @tasks.loop(minutes=1)
 async def message_refresher():
     await update_all_lobby_messages()
+
+
+async def add_dummy_lobby():
+    Lobbies.append(classes.Lobby(0, 0, discord.User, 0, discord.Message, "0.0.0.0", "pass",
+                                 "preset", "desc", [], [], [], [], [], [], [],
+                                 0, 0, 0, discord.User, "none",
+                                 0, 0, "role", "True", "True",
+                                 "True", "Title", "FFFFFF", "FFFFFF",
+                                 0, 0, 0, 0, 0, 0,
+                                 "none", "True", discord.Message, "False", 0,
+                                 0, 0, 0, discord.User, discord.User, [], discord.User, 0,
+                                 "True", 0, 0, [], [], [], []))
 
 
 async def initialize_lobby(lobby_number, lobby_role, lobby_role_ping, lobby_channel):
