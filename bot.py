@@ -1057,6 +1057,12 @@ async def kick_player(lobby_number, user_id):
             await update_message(lobby_number)
             print(f'lobby{lobby_number}: Player {player.display_name} kicked')
             return 1
+    for i in range(len(Lobbies[lobby_number].player_pool)):
+        if Lobbies[lobby_number].player_pool[i].id == player.id:
+            Lobbies[lobby_number].player_pool.pop(i)
+            await update_message(lobby_number)
+            print(f'lobby{lobby_number}: Player {player.display_name} kicked')
+            return 1
     return 0
 
 
@@ -1130,6 +1136,9 @@ class KickModal(discord.ui.Modal):
         lobby_number = await get_lobby_number(interaction)
         userid = self.children[0].value
         player = bot_guild.get_member(int(f"{userid}"))
+        if not player:
+            await interaction.response.send_message(f"Player not found", ephemeral=True)
+            return
         kicked = await kick_player(lobby_number, player.id)
         if kicked:
             await interaction.response.send_message(f"Player {player.display_name} kicked", ephemeral=True)
