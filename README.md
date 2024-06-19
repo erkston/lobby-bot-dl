@@ -116,6 +116,10 @@ Preset Settings (config/presets/*.json):
   - Reloads presets in config/presets/ folder. Note that the /startlobby command hint that shows the available presets tends to update slowly, so it may not immediately reflect the latest information. The bots response to the ReloadPresets command will show you what presets are actually available.
 - ```/lbcom ReloadHeroes```
   - Reloads heroes from config/heroes.json. Will apply to any open lobbies
+- ```/lbcom FullReset```
+  - Closes all lobbies and resets the bot
+- ```/lbcom CloseLobby```
+  - Closes a specific (singular) lobby. Will send a text input to get the lobby number you wish to close
 - ```/lbban USERID```
   - Toggles ban status on a user. USERID must be a 20 digit Discord User ID
 
