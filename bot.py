@@ -127,6 +127,9 @@ async def lbban(ctx, user_id: discord.Option(description="20 digit User ID of th
     if bot_admin_role in ctx.author.roles:
         print(f'Received lbban command from {ctx.author.display_name}, executing command...')
         player = bot_guild.get_member(int(f"{user_id}"))
+        if not player:
+            await ctx.respond(f"Player not found", ephemeral=True)
+            return
         banned = await banunban_player(player)
         if banned:
             await ctx.respond(f"Player {player.display_name} banned", ephemeral=True)
@@ -1039,6 +1042,8 @@ async def kick_player(lobby_number, user_id):
     if Lobbies[lobby_number].launched:
         return 0
     player = bot_guild.get_member(int(f"{user_id}"))
+    if not player:
+        return 0
     for i in range(len(Lobbies[lobby_number].sapp_players)):
         if Lobbies[lobby_number].sapp_players[i].id == player.id:
             Lobbies[lobby_number].sapp_players.pop(i)
@@ -1156,6 +1161,9 @@ class BanModal(discord.ui.Modal):
     async def callback(self, interaction):
         userid = self.children[0].value
         player = bot_guild.get_member(int(f"{userid}"))
+        if not player:
+            await interaction.response.send_message(f"Player not found", ephemeral=True)
+            return
         banned = await banunban_player(player)
         if banned:
             await interaction.response.send_message(f"Player {player.display_name} banned", ephemeral=True)
