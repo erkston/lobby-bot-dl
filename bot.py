@@ -28,7 +28,7 @@ utc = datetime.datetime.now(timezone.utc)
 Lobbies = []
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
-lbcomCommandList = ["ReloadPresets", "ReloadHeroes", "FullReset"]
+lbcomCommandList = ["ReloadPresets", "ReloadHeroes", "FullReset", "CloseLobby"]
 
 
 def load_bans():
@@ -121,6 +121,10 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
             LobbyCount = 0
             await add_dummy_lobby()
             print(f'{ctx.author.display_name} executed full reset')
+
+        elif command.casefold() == "closelobby":
+            print(f'{ctx.author.display_name} executed close lobby command')
+            await ctx.response.send_modal(closeModal(title=f"Close a lobby"))
 
         else:
             await ctx.respond(f'Command not found', ephemeral=True)
@@ -1123,6 +1127,17 @@ def convert_to_seconds(s):
         Units.get(m.group('unit').lower(), 'seconds'): float(m.group('val'))
         for m in re.finditer(r'(?P<val>\d+(\.\d+)?)(?P<unit>[smhdw]?)', s, flags=re.I)
     }).total_seconds())
+
+
+class closeModal(discord.ui.Modal):
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.add_item(discord.ui.InputText(label="Lobby number", style=discord.InputTextStyle.short))
+
+    async def callback(self, interaction):
+        lobby_number = int(self.children[0].value)
+        await close_lobby(lobby_number)
+        await interaction.response.send_message(f"Lobby {lobby_number} closed", ephemeral=True)
 
 
 class DMmodal(discord.ui.Modal):
