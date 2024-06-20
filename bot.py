@@ -167,8 +167,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             await ctx.respond("Could not find that preset, please try again. Note that preset names are case sensitive!", ephemeral=True)
             return
         global LobbyCount, Lobbies, Heroes
-        LobbyCount += 1
-        lobby_number = LobbyCount
+        lobby_number = LobbyCount + 1
         print(f'lobby{lobby_number}: Received lobby request from {ctx.author.display_name}, starting Lobby #{lobby_number}')
 
         with open(f"config/presets/{selected_preset}.json", "r") as presetjsonfile:
@@ -176,7 +175,6 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
             if int(preset['LobbyThreshold']) % 2 or int(preset['LobbyThreshold']) == 0:
                 print(f"startlobby: Invalid LobbyThreshold ({preset['LobbyThreshold']}), cancelling lobby")
                 await ctx.respond(f'LobbyThreshold must be even and non-zero', ephemeral=True)
-                LobbyCount -= 1
                 return
             LobbyRole = preset['LobbyRole']
             for guild in bot.guilds:
@@ -229,7 +227,7 @@ async def startlobby(ctx, server: discord.Option(str, description="Enter the ser
                                          [], discord.User, 0, preset['EnableReadyUp'], 0, 0,
                                          [], [], [], []))
             print(f'lobby{lobby_number}: Lobby created with preset {selected_preset}')
-
+        LobbyCount = lobby_number
         await update_message(lobby_number)
         await update_admin_panel(lobby_number)
 
