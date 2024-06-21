@@ -23,7 +23,7 @@ BotAdminRole = config['BotAdminRole']
 BotSuperAdminRoles = config['BotSuperAdminRoles']
 
 
-version = "v0.3.23"
+version = "v0.4.0"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
 bot_super_admin_roles = []
