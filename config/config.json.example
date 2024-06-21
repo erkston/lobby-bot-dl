@@ -2,5 +2,9 @@
     "DiscordBotToken": "YOUR_BOT_TOKEN",
     "BotTimezone": "Europe/Vienna",
     "BotGame": "a fun game :)",
-    "BotAdminRole": "Lobby Bot Admin"
+    "BotAdminRole": "Lobby Bot Admin",
+    "BotSuperAdminRoles": [
+        "admin",
+        "Moderator"
+    ]
 }

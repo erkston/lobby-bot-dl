@@ -20,11 +20,13 @@ DiscordBotToken = config['DiscordBotToken']
 BotTimezone = config['BotTimezone']
 BotGame = config['BotGame']
 BotAdminRole = config['BotAdminRole']
+BotSuperAdminRoles = config['BotSuperAdminRoles']
 
 
 version = "v0.3.23"
 Units = {'s': 'seconds', 'm': 'minutes', 'h': 'hours', 'd': 'days', 'w': 'weeks'}
 utc = datetime.datetime.now(timezone.utc)
+bot_super_admin_roles = []
 Lobbies = []
 LobbyCount = 0
 allowed_mentions = discord.AllowedMentions(roles=True)
@@ -37,7 +39,7 @@ def load_bans():
     with open("bans.json", "r") as bansjsonfile:
         JSONBans = json.load(bansjsonfile)
     for ban in JSONBans:
-        Bans.append([ban[0], ban[1], ban[2]])
+        Bans.append([ban[0], ban[1], ban[2], ban[3], ban[4], ban[5], ban[6]])
 
 
 def load_presets():
@@ -133,22 +135,27 @@ async def lbcom(ctx, command: discord.Option(description="Command to execute", a
         print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
 
 
-@bot.command(name="lbban", description="Toggle ban status of a user")
-async def lbban(ctx, user_id: discord.Option(description="20 digit User ID of the user to ban or unban")):
-    if bot_admin_role in ctx.author.roles:
+@bot.command(name="lbban", description="Toggle global ban status of a user")
+async def lbban(ctx, user_id: discord.Option(description="Numeric User ID of the user to ban or unban"),
+                duration: discord.Option(description="Ban duration (attach units: 3d, 2w, etc.) Leave blank for indefinite", required=False)):
+    if set(bot_super_admin_roles) & set(ctx.author.roles):
         print(f'Received lbban command from {ctx.author.display_name}, executing command...')
         player = bot_guild.get_member(int(f"{user_id}"))
         if not player:
             await ctx.respond(f"Player not found", ephemeral=True)
             return
-        banned = await banunban_player(player)
+        banned = await banunban_player(player, ctx.author, "global", duration)
         if banned:
-            await ctx.respond(f"Player {player.display_name} banned", ephemeral=True)
+            if not duration:
+                duration_string = "indefinitely"
+            else:
+                duration_string = "for " + duration
+            await ctx.respond(f"Player {player.display_name} banned globally {duration_string}", ephemeral=True)
         else:
             await ctx.respond(f"Player {player.display_name} unbanned", ephemeral=True)
     else:
         await ctx.respond('You do not have appropriate permissions! Leave me alone!!')
-        print(f'Received command from {ctx.author.display_name} who does not have admin role "{bot_admin_role}"!')
+        print(f'Received command from {ctx.author.display_name} who does not have a super admin role"!')
 
 
 @bot.command(name="startlobby", description="Start a lobby")
@@ -246,6 +253,7 @@ async def on_ready():
     print('Config:')
     print(f'BotGame: {BotGame}')
     print(f'BotAdminRole: {BotAdminRole}')
+    print(f'BotSuperAdminRoles: {BotSuperAdminRoles}')
     print(f'Heroes: {heroes_string}')
     print(f'Available presets: {presets_string}')
     print('------------------------------------------------------')
@@ -256,6 +264,7 @@ async def on_ready():
         bot_guild = guild
         print(f'{guild.name} (id: {guild.id})')
     global bot_admin_role
+    global bot_super_admin_roles
     for guild in bot.guilds:
         for role in guild.roles:
             try:
@@ -268,9 +277,22 @@ async def on_ready():
                     bot_admin_role = role
                     print(f'Bot Admin Role found: "{bot_admin_role.name}"')
 
+            for bsa_role in BotSuperAdminRoles:
+                try:
+                    int_role = int(bsa_role)
+                    if role.id == int_role:
+                        bot_super_admin_roles.append(role)
+                        print(f'Bot Super Admin Role found: "{role.name}"')
+                except ValueError:
+                    if role.name == bsa_role:
+                        bot_super_admin_roles.append(role)
+                        print(f'Bot Super Admin Role found: "{role.name}"')
+
     await add_dummy_lobby()
 
     message_refresher.start()
+
+    evaluate_ban_timers.start()
 
     print('Startup complete, awaiting command')
     print('------------------------------------------------------')
@@ -279,6 +301,21 @@ async def on_ready():
 @tasks.loop(minutes=1)
 async def message_refresher():
     await update_all_lobby_messages()
+
+
+@tasks.loop(minutes=5)
+async def evaluate_ban_timers():
+    utc = datetime.datetime.now(timezone.utc)
+    utc_timestamp = utc.timestamp()
+    bans_modified = False
+    for i in range(len(Bans)):
+        if utc_timestamp > int(Bans[i][6]):
+            print(f"{Bans[i][0]}'s ban expired, removing it")
+            Bans.pop(i)
+            bans_modified = True
+            break
+    if bans_modified:
+        await write_bans_to_file()
 
 
 async def add_dummy_lobby():
@@ -1085,19 +1122,35 @@ async def kick_player(lobby_number, user_id):
     return 0
 
 
-async def banunban_player(player):
-    i = 0
-    for existing_ban in Bans:
-        if player.id == existing_ban[2]:
-            Bans.pop(i)
-            print(f'Player {player.display_name} unbanned')
-            await write_bans_to_file()
-            return 0
-        i += 1
+async def banunban_player(player, banner, scope, ban_duration):
+    for i in range(len(Bans)):
+        if player.id == Bans[i][2]:
+            if scope == "global" == Bans[i][5]:
+                Bans.pop(i)
+                print(f'Global ban on Player {player.display_name} removed')
+                await write_bans_to_file()
+                return 0
+
+            if scope == "local" and banner.id == Bans[i][4]:
+                Bans.pop(i)
+                print(f'Local ban on Player {player.display_name} removed for {banner.display_name}')
+                await write_bans_to_file()
+                return 0
+
     for i in range(1, len(Lobbies)):
         await kick_player(i, player.id)
-    Bans.append([player.display_name, player.name, player.id])
-    print(f'Player {player.display_name} banned')
+
+    if not ban_duration:
+        ban_end_utc = 9999999999
+        ban_duration = "indefinite"
+    else:
+        utc = datetime.datetime.now(timezone.utc)
+        utc_timestamp = utc.timestamp()
+        ban_duration_seconds = convert_to_seconds(ban_duration)
+        ban_end_utc = utc_timestamp + ban_duration_seconds
+
+    Bans.append([player.display_name, player.name, player.id, banner.display_name, banner.id, scope, ban_end_utc])
+    print(f'Player {player.display_name} banned by {banner.display_name}. Scope: {scope}. Duration: {ban_duration}')
     await write_bans_to_file()
     return 1
 
@@ -1182,18 +1235,25 @@ class BanModal(discord.ui.Modal):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.add_item(discord.ui.InputText(label="User ID", style=discord.InputTextStyle.short))
+        self.add_item(discord.ui.InputText(label="Duration (3d, 2w, etc) Blank for indefinite", style=discord.InputTextStyle.short, required=False))
 
     async def callback(self, interaction):
         userid = self.children[0].value
+        duration = self.children[1].value
         player = bot_guild.get_member(int(f"{userid}"))
         if not player:
             await interaction.response.send_message(f"Player not found", ephemeral=True)
             return
-        banned = await banunban_player(player)
+
+        banned = await banunban_player(player, interaction.user, "local", duration)
         if banned:
-            await interaction.response.send_message(f"Player {player.display_name} banned", ephemeral=True)
+            if not duration:
+                duration_string = "indefinitely"
+            else:
+                duration_string = "for " + duration
+            await interaction.response.send_message(f"Player {player.display_name} banned from your lobbies {duration_string}", ephemeral=True)
         else:
-            await interaction.response.send_message(f"Player {player.display_name} unbanned", ephemeral=True)
+            await interaction.response.send_message(f"Player {player.display_name} unbanned from your lobbies", ephemeral=True)
 
 
 class SettingModal(discord.ui.Modal):
@@ -1370,9 +1430,14 @@ class LobbyButtons(discord.ui.View):
             interactor = interaction.user
             for existing_ban in Bans:
                 if interactor.id == existing_ban[2]:
-                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
-                    await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
-                    return
+                    if existing_ban[5] == "global":
+                        print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                        await interaction.response.send_message(f"You are banned from all lobbies", ephemeral=True)
+                        return
+                    if existing_ban[5] == "local" and Lobbies[lobby_number].host.id == existing_ban[4]:
+                        print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                        await interaction.response.send_message(f"You are banned from this hosts lobbies", ephemeral=True)
+                        return
             if interactor in Lobbies[lobby_number].ambr_players:
                 await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].amber_name}", ephemeral=True)
                 return
@@ -1412,9 +1477,14 @@ class LobbyButtons(discord.ui.View):
             interactor = interaction.user
             for existing_ban in Bans:
                 if interactor.id == existing_ban[2]:
-                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
-                    await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
-                    return
+                    if existing_ban[5] == "global":
+                        print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                        await interaction.response.send_message(f"You are banned from all lobbies", ephemeral=True)
+                        return
+                    if existing_ban[5] == "local" and Lobbies[lobby_number].host.id == existing_ban[4]:
+                        print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                        await interaction.response.send_message(f"You are banned from this hosts lobbies", ephemeral=True)
+                        return
             if interactor in Lobbies[lobby_number].sapp_players:
                 await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
                 return
@@ -1454,9 +1524,14 @@ class LobbyButtons(discord.ui.View):
             interactor = interaction.user
             for existing_ban in Bans:
                 if interactor.id == existing_ban[2]:
-                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
-                    await interaction.response.send_message(f"You are banned from this lobby", ephemeral=True)
-                    return
+                    if existing_ban[5] == "global":
+                        print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                        await interaction.response.send_message(f"You are banned from all lobbies", ephemeral=True)
+                        return
+                    if existing_ban[5] == "local" and Lobbies[lobby_number].host.id == existing_ban[4]:
+                        print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                        await interaction.response.send_message(f"You are banned from this hosts lobbies", ephemeral=True)
+                        return
             if interactor in Lobbies[lobby_number].sapp_players:
                 await interaction.response.send_message(f"You are already on {Lobbies[lobby_number].sapphire_name}", ephemeral=True)
                 return
@@ -1576,6 +1651,16 @@ class CMButton(discord.ui.View):
     async def cm_button_callback(self, button, interaction):
         lobby_number = await get_lobby_number(interaction)
         interactor = interaction.user
+        for existing_ban in Bans:
+            if interactor.id == existing_ban[2]:
+                if existing_ban[5] == "global":
+                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                    await interaction.response.send_message(f"You are banned from all lobbies", ephemeral=True)
+                    return
+                if existing_ban[5] == "local" and Lobbies[lobby_number].host.id == existing_ban[4]:
+                    print(f'lobby{lobby_number}: Banned user {interactor.display_name} tried to join')
+                    await interaction.response.send_message(f"You are banned from this hosts lobbies", ephemeral=True)
+                    return
         print(f'lobby{lobby_number}: Received cm join/leave command from {interaction.user.display_name}')
         if interactor in Lobbies[lobby_number].player_pool:
             for i in range(len(Lobbies[lobby_number].player_pool)):

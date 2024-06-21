@@ -2,6 +2,10 @@
     [
         "display_name",
         "name",
-        "id"
+        "id",
+        "banned_by",
+        "banned_by_id",
+        "scope",
+        "9999999999"
     ]
 ]

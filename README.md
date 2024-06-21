@@ -57,7 +57,7 @@ Admin panel functions:
 - Resend Connect Info - resend server address and password to lobby members via DM. Only works after the lobby has launched
 - DM Players - opens a modal to send any text to all current lobby players via DM
 - Kick Player - Kicks a player from the lobby, requires their discord User ID.
-- Ban/Unban Players - Bans a player if they're not already banned, or unbans them if they are already banned. Banning a player also kicks them from any open lobbies. Bans are bot-wide and not for a particular lobby and will also persist across bot restarts. Requires discord User ID.
+- Ban/Unban Players - "Locally" bans a player if they're not already banned, or unbans them if they are already banned. Bans created with this button are local to the hosts' lobbies. For global bans see /lbban command. Requires discord User ID and an optional duration parameter that should have units attached (3d, 2w, 1m, etc.).
 
 For kick and ban functions the easiest way to get a User ID is to enable Developer Mode in Discord (Settings > Advanced). 
 Once enabled you can get someone's User ID by right clicking on them and selecting Copy User ID.
@@ -92,6 +92,7 @@ Bot Settings (config/config.json):
 - BotTimezone - Timezone used for timestamps in console output. Will use this timezone instead of system time
 - BotGame - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
 - BotAdminRole* - Name of the role whose members can use /startlobby and /lbset
+- BotSuperAdminRoles* - A list of roles whose members can use /lbban to globally ban players from the bot
 Preset Settings (config/presets/*.json):
 - LobbyRole* - Name of the role the bot will @mention when LobbyRolePing is set to True
 - LobbyRolePing - When True the bot will send a @mention of LobbyRole when a new lobby is opened
@@ -120,8 +121,8 @@ Preset Settings (config/presets/*.json):
   - Closes all lobbies and resets the bot
 - ```/lbcom CloseLobby```
   - Closes a specific (singular) lobby. Will send a text input to get the lobby number you wish to close
-- ```/lbban USERID```
-  - Toggles ban status on a user. USERID must be a 20 digit Discord User ID
+- ```/lbban USERID DURATION(optional)```
+  - Toggles the global ban status on a user. USERID must be a numeric Discord User ID and DURATION should have units attached (3d, 2w, 1m, etc.). User must have one of the BotSuperAdminRoles to execute.
 
 ### Docker Images
 See [Dockerhub](https://hub.docker.com/r/erkston/lobby-bot-dl)
