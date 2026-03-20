@@ -93,6 +93,7 @@ Bot Settings (config/config.json):
 - BotGame - Game the bot should be "Playing" in its Discord presence. Only shows after lobby is launched
 - BotAdminRole* - Name of the role whose members can use /startlobby and /lbset
 - BotSuperAdminRoles* - A list of roles whose members can use /lbban to globally ban players from the bot
+
 Preset Settings (config/presets/*.json):
 - LobbyRole* - Name of the role the bot will @mention when LobbyRolePing is set to True
 - LobbyRolePing - When True the bot will send a @mention of LobbyRole when a new lobby is opened
